@@ -45,16 +45,16 @@ func main() {
 	longs := make([]*widget.Entry, 4)
 	for i := range 4 {
 		lats[i] = widget.NewEntry()
-		lats[i].SetPlaceHolder(fmt.Sprintf("Latitude %d", i+1))
+		lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
 		longs[i] = widget.NewEntry()
-		longs[i].SetPlaceHolder(fmt.Sprintf("Longitude %d", i+1))
+		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
 	}
 
 	acres := widget.NewEntry()
 	acres.SetPlaceHolder("Στρέμματα")
 
 	t := widget.NewEntry()
-	t.SetPlaceHolder("ΕΙΔΟΣ ΚΑΛ/ΓΕΙΑΣ")
+	t.SetPlaceHolder("Ειδος Καλ/γειας")
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
@@ -75,7 +75,7 @@ func main() {
 	r.SetPlaceHolder("Μίσθωμα")
 
 	// Save button
-	saveBtn := widget.NewButton("Save", func() {
+	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
@@ -124,9 +124,9 @@ func main() {
 
 	title := widget.NewLabel("EDIA")
 	title.Alignment = fyne.TextAlignCenter
-	coords_l := widget.NewLabel("GEO Coordinates")
+	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
 	separator := widget.NewSeparator()
-	duration := widget.NewLabel("ΔΙΑΡΚΕΙΑ")
+	duration := widget.NewLabel("Διαρκεια")
 
 	// Layout for the left container
 	left_container := container.NewVBox(
@@ -144,7 +144,6 @@ func main() {
 		separator,
 		lats[3],
 		longs[3],
-		separator,
 	)
 
 	// Layout for the right container
