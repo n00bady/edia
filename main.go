@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/dialog"
 	xwidget "fyne.io/x/fyne/widget"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -33,7 +34,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Place holder same as Entry struct
 	landlord_name := widget.NewEntry()
 	landlord_name.SetPlaceHolder("Εκμισθωτής")
 
@@ -56,32 +56,27 @@ func main() {
 	t := widget.NewEntry()
 	t.SetPlaceHolder("ΕΙΔΟΣ ΚΑΛ/ΓΕΙΑΣ")
 
-	start_in := widget.NewLabel("Starting Date")
-	start_in.Alignment = fyne.TextAlignCenter
-	start_l := widget.NewLabel("")
-	start_l.Alignment = fyne.TextAlignCenter
-	start_d := &Date{dateChosen: start_l}
-	// start_l := time.Now().Format("02/01/2006")
-	// start_d := &date{dateChosen: start_l}
-	startDate := xwidget.NewCalendar(time.Now(), start_d.onSelected)
+	// Starting date input and it's button that opens a calendar for easier date choosing
+	start_input := widget.NewEntry()
+	start_input.SetPlaceHolder("Click the button to add a date.")
+	startDateButton := widget.NewButton("Pick a date", func()  {
+		showCalendar(start_input, myWindow)
+	})
 
-	end_in := widget.NewLabel("End Date")
-	end_in.Alignment = fyne.TextAlignCenter
-	end_l := widget.NewLabel("")
-	end_l.Alignment = fyne.TextAlignCenter
-	end_d := &Date{dateChosen: start_l}
-	// end_l := time.Now().Format("02/01/2006")
-	// end_d := &date{dateChosen: end_l}
-	endDate := xwidget.NewCalendar(time.Now(), end_d.onSelected)
+	// Same as starting date but for the ending date
+	end_input:= widget.NewEntry()
+	end_input.SetPlaceHolder("Click the button to add a date.")
+	endDateButton := widget.NewButton("Pick a date", func()  {
+		showCalendar(end_input, myWindow)
+	})
+
 
 	r := widget.NewEntry()
 	r.SetPlaceHolder("Μίσθωμα")
 
-	// entry := Entry{}
-
 	// Save button
 	saveBtn := widget.NewButton("Save", func() {
-		// convert to float64 and gather the coordinates
+		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
 			latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
@@ -104,6 +99,8 @@ func main() {
 		if err != nil {
 			log.Printf("Error parsing the rent price")
 		}
+
+		// We build the new entry here
 		newEntry := Entry{
 			LandlordName: landlord_name.Text,
 			RenterName:   renter_name.Text,
@@ -111,17 +108,17 @@ func main() {
 			Timestamp:    time.Now(),
 			Size:         size,
 			Type:         t.Text,
-			Start:        start_d.dateChosen.Text,
-			End:          end_d.dateChosen.Text,
+			Start:        start_input.Text,
+			End:          start_input.Text,
 			Rent:         money,
 		}
-		// entry = newEntry
+
 		err = saveEntry(db, newEntry)
 		if err != nil {
 			log.Printf("Error saving entry: %v", err)
 			return
 		}
-		// entry.SetText("")
+
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
 	})
 
@@ -130,7 +127,8 @@ func main() {
 	coords_l := widget.NewLabel("GEO Coordinates")
 	separator := widget.NewSeparator()
 	duration := widget.NewLabel("ΔΙΑΡΚΕΙΑ")
-	// Layout
+
+	// Layout for the left container
 	left_container := container.NewVBox(
 		landlord_name,
 		renter_name,
@@ -148,39 +146,49 @@ func main() {
 		longs[3],
 		separator,
 	)
-	left_container.Resize(fyne.NewSize(300, 300))
+
+	// Layout for the right container
 	right_container := container.NewVBox(
 		acres,
 		t,
 		r,
 		duration,
-		start_in,
-		startDate,
-		end_in,
-		endDate,
+		start_input,
+		startDateButton,
+		end_input,
+		endDateButton,
 		separator,
-		saveBtn,
-	)
-	right_container.Resize(fyne.NewSize(300,300))
-
-	content := container.NewHBox(
-		left_container,
-		right_container,
 	)
 
+	// Putting both left and right containters on a grid
+	content := container.NewGridWithColumns(2, left_container, right_container)
+
+	// Finally add everything into a VBox and call it a day
 	body := container.NewVBox(
 		title,
 		content,
+		saveBtn,
 	)
 
 	// Set window content and size
 	myWindow.SetContent(body)
-	myWindow.Resize(fyne.NewSize(300, 600))
+	myWindow.Resize(fyne.NewSize(500, 500))
 
 	// Runing the app
 	myWindow.ShowAndRun()
 }
 
-func (d *Date) onSelected(t time.Time) {
-	d.dateChosen.SetText(t.Format("02/01/2006"))
+// Show Calendar for easy date picking
+func showCalendar(entry *widget.Entry, window fyne.Window) {
+	calendar := xwidget.NewCalendar(time.Now(), func(t time.Time) {
+		dateString := t.Format("02/01/2006")
+		entry.SetText(dateString)
+
+		for _, overlay := range window.Canvas().Overlays().List() {
+			overlay.Hide()
+		}
+	})
+
+	popup := dialog.NewCustom("Select Date", "Cancel", calendar, window)
+	popup.Show()
 }

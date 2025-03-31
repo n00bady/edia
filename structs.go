@@ -2,14 +2,12 @@ package main
 
 import (
 	"time"
-
-	"fyne.io/fyne/v2/widget"
 )
 
 // For the calendar date selection
-type Date struct {
-	dateChosen *widget.Label
-}
+// type Date struct {
+// 	dateChosen *widget.Label
+// }
 
 // Coordinates for the land
 type Coordinate struct {
