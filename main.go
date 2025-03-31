@@ -58,14 +58,14 @@ func main() {
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
-	start_input.SetPlaceHolder("Click the button to add a date.")
+	start_input.SetPlaceHolder("ΑΠΟ")
 	startDateButton := widget.NewButton("Pick a date", func()  {
 		showCalendar(start_input, myWindow)
 	})
 
 	// Same as starting date but for the ending date
 	end_input:= widget.NewEntry()
-	end_input.SetPlaceHolder("Click the button to add a date.")
+	end_input.SetPlaceHolder("ΕΩΣ")
 	endDateButton := widget.NewButton("Pick a date", func()  {
 		showCalendar(end_input, myWindow)
 	})
