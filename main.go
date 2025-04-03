@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 	xwidget "fyne.io/x/fyne/widget"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -59,17 +59,16 @@ func main() {
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
-	startDateButton := widget.NewButton("Pick a date", func()  {
+	startDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(start_input, myWindow)
 	})
 
 	// Same as starting date but for the ending date
-	end_input:= widget.NewEntry()
+	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
-	endDateButton := widget.NewButton("Pick a date", func()  {
+	endDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(end_input, myWindow)
 	})
-
 
 	r := widget.NewEntry()
 	r.SetPlaceHolder("Μίσθωμα")
@@ -84,6 +83,7 @@ func main() {
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
+				dialog.ShowError(err, myWindow)
 			}
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
@@ -92,12 +92,13 @@ func main() {
 		size, err := strconv.ParseFloat(acres.Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
+			dialog.ShowError(err, myWindow)
 		}
 
 		money, err := strconv.ParseFloat(r.Text, 32)
-
 		if err != nil {
 			log.Printf("Error parsing the rent price")
+			dialog.ShowError(err, myWindow)
 		}
 
 		// We build the new entry here
@@ -116,10 +117,12 @@ func main() {
 		err = saveEntry(db, newEntry)
 		if err != nil {
 			log.Printf("Error saving entry: %v", err)
+			dialog.ShowError(err, myWindow)
 			return
 		}
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
+		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\nin %s", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent, dbPath), myWindow)
 	})
 
 	title := widget.NewLabel("EDIA")
