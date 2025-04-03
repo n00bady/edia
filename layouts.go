@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func mobileLayout(appState *AppState) (fyne.CanvasObject, error) {
@@ -110,7 +109,7 @@ func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
 		}
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
-		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\nin %s", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent, appState.db), appState.window)
+		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
 	})
 
 	title := widget.NewLabel("EDIA")
@@ -150,15 +149,47 @@ func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
 		separator,
 	)
 
+	backButton := widget.NewButton("<-", func() {
+		tmp, err := listView(appState)
+		if err != nil {
+			log.Printf("error constructing list layout: %v", err)
+		}
+		body := container.NewBorder(nil, nil, nil, nil, tmp)
+		appState.window.SetContent(body)
+	})
+
 	// Putting both left and right containters on a grid
 	content := container.NewGridWithColumns(2, left_container, right_container)
+	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
 
 	// Finally add everything into a VBox and call it a day
 	body := container.NewVBox(
 		title,
 		content,
-		saveBtn,
+		buttons,
 	)
+
+	return body, nil
+}
+
+func listView(appState *AppState) (fyne.CanvasObject, error) {
+	entries, err := getAll(appState.db)
+	if err != nil {
+		return nil, err
+	}
+	list := widget.NewList(func() int {
+		return len(entries)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Template")
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			entry := entries[lii]
+			co.(*widget.Label).SetText(fmt.Sprintf("%d: %s", entry.ID, entry.LandlordName))
+		},
+	)
+
+	body := container.NewBorder(nil, nil, nil, nil, container.NewVScroll(list))
 
 	return body, nil
 }

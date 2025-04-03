@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Initialize the DB if it doesn't exists
@@ -84,4 +86,25 @@ func saveEntry(db *sql.DB, entry Entry) error {
 }
 
 // TODO: query to retrieve and entry for display
+func getAll(db *sql.DB) ([]Entry, error) {
+	selectSQL := `
+		SELECT * FROM entries
+	`
+	result, err := db.Query(selectSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error quering the database: %v", err)
+	}
+
+	var entries []Entry
+	for result.Next() {
+		var entry Entry
+		err := result.Scan(&entry.ID, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving entries from database: %v", err)
+		}
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}
 // TODO: queries for searching a variety of fields
