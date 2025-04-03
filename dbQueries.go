@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// Initialize the DB if it doesn't exists
 func initDB(dbPath string) (*sql.DB, error) {
 	// Make sure that the directory exists (old android version need this)
 	err := os.MkdirAll(filepath.Dir(dbPath), 0755)
@@ -54,6 +55,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
+// Save an entry
 func saveEntry(db *sql.DB, entry Entry) error {
 	insertSQL := `
         INSERT INTO entries (Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
@@ -80,3 +82,6 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 	return nil
 }
+
+// TODO: query to retrieve and entry for display
+// TODO: queries for searching a variety of fields

@@ -1,13 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"time"
+
+	"fyne.io/fyne/v2"
 )
 
 // For the calendar date selection
 // type Date struct {
 // 	dateChosen *widget.Label
 // }
+
+// It's easier that way
+type AppState struct {
+	db     *sql.DB
+	window fyne.Window
+}
 
 // Coordinates for the land
 type Coordinate struct {
@@ -30,4 +39,3 @@ type Entry struct {
 	End          string
 	Rent         float64
 }
-
