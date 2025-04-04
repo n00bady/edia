@@ -26,23 +26,31 @@ func main() {
 	// Check if it runs on mobile or desktop and construct the apropriate layout
 	// TODO: mobile layout
 	var body fyne.CanvasObject
-	if fyne.CurrentDevice().IsMobile() {
-		body, err = mobileLayout(AppInst)
-		if err != nil {
-			log.Printf("error construct layout: %v", err)
-		}
-	} else {
-		// body, err = desktopLayout(AppInst)
-		body, err = listView(AppInst)
-		if err != nil {
-			log.Printf("error constructing list layout: %v", err)
-		}
+	body, err = mainView(AppInst)
+	if err != nil {
+		log.Fatalf("error constructing main view: %v", err)
 	}
+
+	// if fyne.CurrentDevice().IsMobile() {
+	// 	body, err = mobileForm(AppInst)
+	// 	if err != nil {
+	// 		log.Printf("error construct layout: %v", err)
+	// 	}
+	// } else {
+	// 	// body, err = desktopLayout(AppInst)
+	// 	body, err = mainView(AppInst)
+	// 	if err != nil {
+	// 		log.Printf("error constructing list layout: %v", err)
+	// 	}
+	// }
 
 	// Set window content and size
 	AppInst.window.SetContent(body)
 	// This probably not needed after I have all of may layouts
-	AppInst.window.Resize(fyne.NewSize(500, 500))
+	// AppInst.window.Resize(fyne.NewSize(500, 500))
+	if !fyne.CurrentDevice().IsMobile() {
+		AppInst.window.Resize(fyne.NewSize(600, 600))
+	}
 
 	// Runing the app
 	AppInst.window.ShowAndRun()
@@ -70,7 +78,7 @@ func InitApp() (*AppState, error) {
 	}
 
 	return &AppState{
-		db: db,
+		db:     db,
 		window: myWindow,
 	}, nil
 }

@@ -9,10 +9,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
-func mobileLayout(appState *AppState) (fyne.CanvasObject, error) {
+func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	soon := widget.NewLabel("Soon(tm)")
 
 	body := container.NewVBox(soon)
@@ -20,7 +21,7 @@ func mobileLayout(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
+func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	landlord_name := widget.NewEntry()
 	landlord_name.SetPlaceHolder("Εκμισθωτής")
 
@@ -150,7 +151,7 @@ func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
 	)
 
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := listView(appState)
+		tmp, err := mainView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -172,14 +173,14 @@ func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func listView(appState *AppState) (fyne.CanvasObject, error) {
+func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	entries, err := getAll(appState.db)
 	if err != nil {
 		return nil, err
 	}
 	list := widget.NewList(func() int {
 		return len(entries)
-		},
+	},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
@@ -189,14 +190,27 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 		},
 	)
 
-	addButton := widget.NewButton("+", func() {
-		tmp, err := desktopLayout(appState)
-		if err != nil {
-			log.Printf("error constructing desktop layout: %v", err)
-		}
-		body := container.NewBorder(nil, nil, nil, nil, tmp)
-		appState.window.SetContent(body)
-	})
+	var addButton fyne.CanvasObject
+
+	if fyne.CurrentDevice().IsMobile() {
+		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+			tmp, err := mobileForm(appState)
+			if err != nil {
+				log.Printf("error constructing mobile layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+	} else {
+		addButton = widget.NewButton("+", func() {
+			tmp, err := desktopForm(appState)
+			if err != nil {
+				log.Printf("error constructing desktop layout: %v", err)
+			}
+			body := container.NewBorder(nil, nil, nil, nil, tmp)
+			appState.window.SetContent(body)
+		})
+	}
+
 	body := container.NewBorder(nil, addButton, nil, nil, container.NewVScroll(list))
 
 	return body, nil
