@@ -31,25 +31,12 @@ func main() {
 		log.Fatalf("error constructing main view: %v", err)
 	}
 
-	// if fyne.CurrentDevice().IsMobile() {
-	// 	body, err = mobileForm(AppInst)
-	// 	if err != nil {
-	// 		log.Printf("error construct layout: %v", err)
-	// 	}
-	// } else {
-	// 	// body, err = desktopLayout(AppInst)
-	// 	body, err = mainView(AppInst)
-	// 	if err != nil {
-	// 		log.Printf("error constructing list layout: %v", err)
-	// 	}
-	// }
-
 	// Set window content and size
 	AppInst.window.SetContent(body)
 	// This probably not needed after I have all of may layouts
 	// AppInst.window.Resize(fyne.NewSize(500, 500))
 	if !fyne.CurrentDevice().IsMobile() {
-		AppInst.window.Resize(fyne.NewSize(600, 600))
+		AppInst.window.Resize(fyne.NewSize(600, 500))
 	}
 
 	// Runing the app
