@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	xwidget "fyne.io/x/fyne/widget"
 	_ "github.com/mattn/go-sqlite3"
@@ -33,8 +34,7 @@ func main() {
 
 	// Set window content and size
 	AppInst.window.SetContent(body)
-	// This probably not needed after I have all of may layouts
-	// AppInst.window.Resize(fyne.NewSize(500, 500))
+
 	if !fyne.CurrentDevice().IsMobile() {
 		AppInst.window.Resize(fyne.NewSize(600, 500))
 	}
@@ -47,6 +47,8 @@ func main() {
 func InitApp() (*AppState, error) {
 	myApp := app.NewWithID("xyz.n00bady.edia")
 	myWindow := myApp.NewWindow("EDIA")
+
+	myApp.Settings().SetTheme(theme.DarkTheme())
 
 	dataDir := myApp.Storage().RootURI().Path()
 	dbPath := filepath.Join(dataDir, "entries.db")
