@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	xwidget "fyne.io/x/fyne/widget"
@@ -34,21 +33,10 @@ func main() {
 		}
 	} else {
 		// body, err = desktopLayout(AppInst)
-		list, err := listView(AppInst)
+		body, err = listView(AppInst)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
-
-		addButton := widget.NewButton("+", func() {
-			tmp, err := desktopLayout(AppInst)
-			if err != nil {
-				log.Printf("error constructing desktop layout: %v", err)
-			}
-			body = container.NewBorder(nil, nil, nil, nil, tmp)
-			AppInst.window.SetContent(body)
-		})
-
-		body = container.NewBorder(nil, addButton, nil, nil, list)
 	}
 
 	// Set window content and size

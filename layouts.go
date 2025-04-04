@@ -149,7 +149,7 @@ func desktopLayout(appState *AppState) (fyne.CanvasObject, error) {
 		separator,
 	)
 
-	backButton := widget.NewButton("<-", func() {
+	backButton := widget.NewButton("Cancel", func() {
 		tmp, err := listView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
@@ -189,7 +189,15 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 		},
 	)
 
-	body := container.NewBorder(nil, nil, nil, nil, container.NewVScroll(list))
+	addButton := widget.NewButton("+", func() {
+		tmp, err := desktopLayout(appState)
+		if err != nil {
+			log.Printf("error constructing desktop layout: %v", err)
+		}
+		body := container.NewBorder(nil, nil, nil, nil, tmp)
+		appState.window.SetContent(body)
+	})
+	body := container.NewBorder(nil, addButton, nil, nil, container.NewVScroll(list))
 
 	return body, nil
 }
