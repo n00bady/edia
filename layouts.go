@@ -15,6 +15,7 @@ import (
 )
 
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
+	log.Printf("Creating the mobileForm...")
 	// soon := widget.NewLabel("Soon(tm)")
 	landlord_name := widget.NewEntry()
 	landlord_name.SetPlaceHolder("Εκμισθωτής")
@@ -167,10 +168,13 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		),
 	)
 
+	log.Printf("mobileForm created successfully.")
+
 	return body, nil
 }
 
 func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
+	log.Printf("Creating desktopForm...")
 	landlord_name := widget.NewEntry()
 	landlord_name.SetPlaceHolder("Εκμισθωτής")
 
@@ -319,10 +323,13 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		buttons,
 	)
 
+	log.Printf("desktopForm created successfully.")
+
 	return body, nil
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
+	log.Printf("Creating the mainView...")
 	entries, err := getAll(appState.db)
 	if err != nil {
 		return nil, err
@@ -374,6 +381,8 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			),
 		),
 	)
+
+	log.Printf("mainView created successfully!")
 
 	return body, nil
 }

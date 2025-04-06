@@ -3,20 +3,23 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // Initialize the DB if it doesn't exists
 func initDB(dbPath string) (*sql.DB, error) {
 	// Make sure that the directory exists (old android version need this)
+	log.Printf("Initializing database...")
 	err := os.MkdirAll(filepath.Dir(dbPath), 0755)
 	if err != nil {
 		return nil, fmt.Errorf("error creating directory: %v", err)
 	}
 
+	log.Printf("Opening the database in: %s", dbPath)
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("error opening database: %v", err)
@@ -36,10 +39,13 @@ func initDB(dbPath string) (*sql.DB, error) {
 			End DATETIME NOT NULL
         );
 	`
+
+	log.Printf("Creating table entries if it doesn't exists...")
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
 		return nil, fmt.Errorf("error creating table: %v", err)
 	}
+
 	createCoordsTable := `
 		CREATE TABLE IF NOT EXISTS coordinates (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,10 +55,14 @@ func initDB(dbPath string) (*sql.DB, error) {
 			FOREIGN KEY (entry_id) REFERENCES entries(id)
 		);
 	`
+
+	log.Printf("Creating coordinates table if it doesn't exist...")
 	_, err = db.Exec(createCoordsTable)
 	if err != nil {
 		return nil, fmt.Errorf("error creating coordinates table: %v", err)
 	}
+
+	log.Printf("Tables created successfully!")
 
 	return db, nil
 }
@@ -61,7 +71,10 @@ func initDB(dbPath string) (*sql.DB, error) {
 func saveEntry(db *sql.DB, entry Entry) error {
 	insertSQL := `
         INSERT INTO entries (Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	log.Printf("Saving new entry in the database...")
 	result, err := db.Exec(insertSQL, entry.Timestamp, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return fmt.Errorf("error inserting entry: %v", err)
@@ -73,6 +86,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	}
 	entry.ID = int(id)
 
+	log.Printf("Saving the coordinates in the database...")
 	insertCoordsSQL := `
 		INSERT INTO coordinates (entry_id, latitude, longitude) VALUES (?, ?, ?)`
 	for i := range 4 {
@@ -82,6 +96,8 @@ func saveEntry(db *sql.DB, entry Entry) error {
 		}
 	}
 
+	log.Printf("Saved entry successfully!")
+
 	return nil
 }
 
@@ -90,6 +106,8 @@ func getAll(db *sql.DB) ([]Entry, error) {
 	selectSQL := `
 		SELECT * FROM entries
 	`
+
+	log.Printf("Quering database...")
 	result, err := db.Query(selectSQL)
 	if err != nil {
 		return nil, fmt.Errorf("error quering the database: %v", err)
@@ -104,7 +122,9 @@ func getAll(db *sql.DB) ([]Entry, error) {
 		}
 		entries = append(entries, entry)
 	}
+	log.Printf("Retrieved the results successfully!")
 
 	return entries, nil
 }
+
 // TODO: queries for searching a variety of fields
