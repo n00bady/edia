@@ -16,7 +16,13 @@ import (
 
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the mobileForm...")
-	// soon := widget.NewLabel("Soon(tm)")
+
+	title := widget.NewLabel("EDIA")
+	title.Alignment = fyne.TextAlignCenter
+	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	separator := widget.NewSeparator()
+	duration := widget.NewLabel("Διαρκεια")
+
 	landlord_name := widget.NewEntry()
 	landlord_name.SetPlaceHolder("Εκμισθωτής")
 
@@ -32,6 +38,13 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		longs[i] = widget.NewEntry()
 		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
 	}
+	coords_inputs := container.New(
+		layout.NewGridLayoutWithRows(4),
+		lats[0], longs[0],
+		lats[1], longs[1],
+		lats[2], longs[2],
+		lats[3], longs[3],
+	)
 
 	acres := widget.NewEntry()
 	acres.SetPlaceHolder("Στρέμματα")
@@ -108,28 +121,14 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
 	})
 
-	title := widget.NewLabel("EDIA")
-	title.Alignment = fyne.TextAlignCenter
-	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	separator := widget.NewSeparator()
-	duration := widget.NewLabel("Διαρκεια")
-
 	// Layout for the left container
 	left_container := container.NewVBox(
 		landlord_name,
 		renter_name,
+		separator,
+		separator,
 		coords_l,
-		lats[0],
-		longs[0],
-		separator,
-		lats[1],
-		longs[1],
-		separator,
-		lats[2],
-		longs[2],
-		separator,
-		lats[3],
-		longs[3],
+		coords_inputs,
 	)
 
 	// Layout for the right container
@@ -154,7 +153,6 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
-	// body := container.NewVBox(soon, backButton)
 	body := container.NewVScroll(
 		container.NewVBox(
 			left_container,
@@ -167,6 +165,20 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 			),
 		),
 	)
+
+	allInputs := []*widget.Entry{
+		landlord_name,
+		renter_name,
+		lats[0], longs[0],
+		lats[1], longs[1],
+		lats[2], longs[2],
+		lats[3], longs[3],
+		acres,
+		t,
+		r,
+	}
+
+	focusChain(allInputs, appState)
 
 	log.Printf("mobileForm created successfully.")
 
@@ -385,4 +397,17 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("mainView created successfully!")
 
 	return body, nil
+}
+
+func focusChain(inputs []*widget.Entry, appState *AppState) {
+	for i, input := range inputs {
+		input.OnSubmitted = func(_ string) {
+			if i < len(inputs)-1 {
+				appState.window.Canvas().Focus(inputs[i+1])
+			} else {
+				input.Disable()
+				input.Enable()
+			}
+		}
+	}
 }
