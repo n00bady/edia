@@ -41,7 +41,7 @@ func main() {
 
 	if !fyne.CurrentDevice().IsMobile() {
 		log.Printf("It's not a mobile device set size to 600, 500")
-		AppInst.window.Resize(fyne.NewSize(600, 500))
+		AppInst.window.Resize(fyne.NewSize(600, 650))
 	} 
 
 	log.Printf("Running...")

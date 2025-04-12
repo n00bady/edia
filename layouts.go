@@ -158,6 +158,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	body := container.NewVScroll(
 		container.NewVBox(
 			left_container,
+			layout.NewSpacer(),
 			right_container,
 			container.New(
 				layout.NewHBoxLayout(),
@@ -450,12 +451,23 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 		widget.NewButton("Close", nil),
 	)
 
+	// Iterate over all canvas objects of content 
+	// and if its a label enable text wrapping
+	for _, obj := range content.Objects {
+		if label, ok := obj.(*widget.Label); ok {
+			label.Wrapping = fyne.TextWrapWord
+		}
+	}
+
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
 
 	// Popup close button
 	content.Objects[len(content.Objects)-1].(*widget.Button).OnTapped = func() {
 		popup.Hide()
 	}
+
+	contentMinHeight := content.MinSize().Height
+	popup.Resize(fyne.NewSize(320, contentMinHeight))
 
 	popup.Show()
 	fmt.Printf("Popup displayed for: %d", entry.ID)
