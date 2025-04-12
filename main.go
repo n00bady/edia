@@ -57,7 +57,8 @@ func InitApp() (*AppState, error) {
 
 	// This is deprecated will be removed for fyne v3.0
 	// Don't care!
-	myApp.Settings().SetTheme(theme.DarkTheme())
+	// myApp.Settings().SetTheme(theme.DarkTheme())
+	myApp.Settings().SetTheme(&MyTheme{base: theme.DarkTheme()})
 
 	log.Printf("Initializing database...")
 

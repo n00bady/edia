@@ -284,7 +284,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	title := widget.NewLabel("EDIA")
 	title.Alignment = fyne.TextAlignCenter
 	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	separator := widget.NewSeparator()
+	// separator := widget.NewSeparator()
 	duration := widget.NewLabel("Διαρκεια")
 
 	// Layout for the left container
@@ -294,13 +294,10 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		coords_l,
 		lats[0],
 		longs[0],
-		separator,
 		lats[1],
 		longs[1],
-		separator,
 		lats[2],
 		longs[2],
-		separator,
 		lats[3],
 		longs[3],
 	)
@@ -315,7 +312,6 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		startDateButton,
 		end_input,
 		endDateButton,
-		separator,
 	)
 
 	backButton := widget.NewButton("Cancel", func() {
@@ -335,6 +331,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	body := container.NewVBox(
 		title,
 		content,
+		layout.NewSpacer(),
 		buttons,
 	)
 
@@ -367,7 +364,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			entry := entries[lii]
 			label, ok := co.(*widget.Label)
 			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: ", fmt.Sprintf("%T", co))
+				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
 				return
 			}
 			label.SetText(fmt.Sprintf("%d: %s -> %s", entry.ID, entry.LandlordName, entry.RenterName))
