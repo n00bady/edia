@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// This is just the desktopForm copy-pasted but changed the layout and added additional
+// functions specific for mobile use.
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the mobileForm...")
 
@@ -84,7 +86,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
-		// and the size
+		// and the sizekj
 		size, err := strconv.ParseFloat(acres.Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
@@ -346,17 +348,39 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	list := widget.NewList(func() int {
-		return len(entries)
-	},
+
+	list := widget.NewList(
+		func() int {
+			return len(entries)
+		},
 		func() fyne.CanvasObject {
+			log.Printf("Creating list template...")
 			return widget.NewLabel("Template")
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			log.Printf("Updating item with ID: %d", lii)
+			if lii < 0 || lii >= len(entries) {
+				log.Printf("Invalid item ID: %d", lii)
+				return
+			}
 			entry := entries[lii]
-			co.(*widget.Label).SetText(fmt.Sprintf("%d: %s", entry.ID, entry.LandlordName))
+			label, ok := co.(*widget.Label)
+			if !ok {
+				log.Printf("Canvas object is not *widget.Label, its: ", fmt.Sprintf("%T", co))
+				return
+			}
+			label.SetText(fmt.Sprintf("%d: %s -> %s", entry.ID, entry.LandlordName, entry.RenterName))
 		},
 	)
+
+	list.OnSelected = func(id widget.ListItemID) {
+		log.Printf("Selected item: %d", id)
+		if id >= 0 && id < len(entries) {
+			log.Printf("Showing popup for item: %d", entries[id].ID)
+			showDetailsPopup(entries[id], appState)
+			list.UnselectAll()
+		}
+	}
 
 	var addButton fyne.CanvasObject
 
@@ -410,4 +434,29 @@ func focusChain(inputs []*widget.Entry, appState *AppState) {
 			}
 		}
 	}
+}
+
+// Details popup for the list
+func showDetailsPopup(entry Entry, appState *AppState) {
+	log.Printf("Showing popup for: %d", entry.ID)
+	content := container.NewVBox(
+		widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
+		widget.NewLabel(fmt.Sprintf("Timestamp: %s", entry.Timestamp)),
+		widget.NewLabel(fmt.Sprintf("Landlord: %s", entry.LandlordName)),
+		widget.NewLabel(fmt.Sprintf("Renter: %s", entry.RenterName)),
+		widget.NewLabel(fmt.Sprintf("Rent: %f€", entry.Rent)),
+		widget.NewLabel(fmt.Sprintf("From: %s", entry.Start)),
+		widget.NewLabel(fmt.Sprintf("To: %s", entry.End)),
+		widget.NewButton("Close", nil),
+	)
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+
+	// Popup close button
+	content.Objects[len(content.Objects)-1].(*widget.Button).OnTapped = func() {
+		popup.Hide()
+	}
+
+	popup.Show()
+	fmt.Printf("Popup displayed for: %d", entry.ID)
 }
