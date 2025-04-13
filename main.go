@@ -28,8 +28,8 @@ func main() {
 	log.Printf("Constructing the intial view...")
 
 	// Check if it runs on mobile or desktop and construct the apropriate layout
-	// TODO: mobile layout
 	var body fyne.CanvasObject
+
 	body, err = mainView(AppInst)
 	if err != nil {
 		log.Fatalf("error constructing main view: %v", err)
@@ -42,7 +42,7 @@ func main() {
 	if !fyne.CurrentDevice().IsMobile() {
 		log.Printf("It's not a mobile device set size to 600, 500")
 		AppInst.window.Resize(fyne.NewSize(600, 650))
-	} 
+	}
 
 	log.Printf("Running...")
 	// Runing the app

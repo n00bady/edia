@@ -45,7 +45,9 @@ func (t *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 	case theme.SizeNameCaptionText:
 		return 14
 	case theme.SizeNamePadding:
-		return 6
+		return 8
+	case theme.SizeNameInnerPadding:
+		return 12
 	default:
 		return t.base.Size(name)
 	}

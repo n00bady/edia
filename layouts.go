@@ -19,8 +19,6 @@ import (
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the mobileForm...")
 
-	title := widget.NewLabel("EDIA")
-	title.Alignment = fyne.TextAlignCenter
 	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
 	separator := widget.NewSeparator()
 	duration := widget.NewLabel("Διαρκεια")
@@ -281,10 +279,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
 	})
 
-	title := widget.NewLabel("EDIA")
-	title.Alignment = fyne.TextAlignCenter
 	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	// separator := widget.NewSeparator()
 	duration := widget.NewLabel("Διαρκεια")
 
 	// Layout for the left container
@@ -329,7 +324,6 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Finally add everything into a VBox and call it a day
 	body := container.NewVBox(
-		title,
 		content,
 		layout.NewSpacer(),
 		buttons,
@@ -396,8 +390,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil {
 				log.Printf("error constructing desktop layout: %v", err)
 			}
-			body := container.NewBorder(nil, nil, nil, nil, tmp)
-			appState.window.SetContent(body)
+			appState.window.SetContent(tmp)
 		})
 	}
 	addButton.Resize(fyne.NewSize(200, 200))
@@ -448,7 +441,7 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 		widget.NewButton("Close", nil),
 	)
 
-	// Iterate over all canvas objects of content 
+	// Iterate over all canvas objects of content
 	// and if its a label enable text wrapping
 	for _, obj := range content.Objects {
 		if label, ok := obj.(*widget.Label); ok {
