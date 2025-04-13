@@ -128,3 +128,23 @@ func getAll(db *sql.DB) ([]Entry, error) {
 }
 
 // TODO: queries for searching a variety of fields
+
+func getEntry(db *sql.DB, id int) (*Entry, error) {
+	selectSQL := `
+		Select * From entries WHERE ID = ?
+	`
+	var entry Entry
+
+	log.Printf("Quering the database for entry with id: %d", id)
+	result := db.QueryRow(selectSQL, id)
+	err := result.Scan(&entry.ID, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error retrieing entry with id: %d: %v", id, err)
+	}
+
+
+	return &entry, nil
+}
