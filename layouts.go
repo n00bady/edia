@@ -74,8 +74,10 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
+			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
+			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
+			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
+			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
@@ -118,7 +120,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
-		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
+		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
 	// Layout for the left container
@@ -232,8 +234,10 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
+			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
+			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
+			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
+			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
@@ -276,7 +280,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
-		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
+		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
 	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
@@ -342,10 +346,10 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 	log.Printf("Creating edit form...")
 	landlord_name := widget.NewEntry()
-	landlord_name.SetPlaceHolder(entry.LandlordName)
+	landlord_name.SetText(entry.LandlordName)
 
 	renter_name := widget.NewEntry()
-	renter_name.SetPlaceHolder(entry.RenterName)
+	renter_name.SetText(entry.RenterName)
 
 	// I hate this
 	lats := make([]*widget.Entry, 4)
@@ -355,11 +359,11 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		for i := range 4 {
 			lats[i] = widget.NewEntry()
 			platos := strconv.FormatFloat(entry.Coords[i].Latitude, 'f', -1, 64)
-			lats[i].SetPlaceHolder(platos)
+			lats[i].SetText(platos)
 
 			longs[i] = widget.NewEntry()
 			mhkos := strconv.FormatFloat(entry.Coords[i].Longitude, 'f', -1, 64)
-			longs[i].SetPlaceHolder(mhkos)
+			longs[i].SetText(mhkos)
 		}
 	} else {
 		for i := range 4 {
@@ -371,39 +375,44 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 	}
 
 	acres := widget.NewEntry()
-	acres.SetPlaceHolder(strconv.FormatFloat(entry.Size, 'f', 3, 64))
+	acres.SetText(strconv.FormatFloat(entry.Size, 'f', 3, 64))
 
 	t := widget.NewEntry()
-	t.SetPlaceHolder(entry.Type)
+	t.SetText(entry.Type)
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
-	start_input.SetPlaceHolder(entry.Start)
+	start_input.SetText(entry.Start)
 	startDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(start_input, appState.window)
 	})
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
-	end_input.SetPlaceHolder(entry.End)
+	end_input.SetText(entry.End)
 	endDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(end_input, appState.window)
 	})
 
 	r := widget.NewEntry()
-	r.SetPlaceHolder(strconv.FormatFloat(entry.Rent, 'f', 2, 64))
+	r.SetText(strconv.FormatFloat(entry.Rent, 'f', 2, 64))
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
-
-			if errLat != nil || errLon != nil {
-				log.Printf("Error parsing coordinates")
-				dialog.ShowError(errLat, appState.window)
+			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
+			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
+			latValue, err := ParseFloatToXDecimals(lats[i].Text, 5)
+			if err != nil {
+				log.Printf("Error parsing coordinates: %v", err)
+				dialog.ShowError(err, appState.window)
+			}
+			longValue, err := ParseFloatToXDecimals(longs[i].Text, 5)
+			if err != nil {
+				log.Printf("Error parsing coordinates: %v", err)
+				dialog.ShowError(err, appState.window)
 			}
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
@@ -423,6 +432,7 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		newEntry := Entry{
+			ID:           entry.ID,
 			LandlordName: landlord_name.Text,
 			RenterName:   renter_name.Text,
 			Coords:       coords,
@@ -434,7 +444,8 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 			Rent:         money,
 		}
 
-		err = saveEntry(appState.db, newEntry)
+		// err = saveEntry(appState.db, newEntry)
+		err = updateEntry(appState.db, newEntry)
 		if err != nil {
 			log.Printf("Error saving entry: %v", err)
 			dialog.ShowError(err, appState.window)
@@ -442,7 +453,7 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		}
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
-		dialog.ShowInformation("Database: ", fmt.Sprintf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent), appState.window)
+		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
 	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
@@ -624,7 +635,9 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 	}
 	content.Objects[len(content.Objects)-2].(*widget.Button).OnTapped = func() {
 		editForm, err := desktopEdit(appState, entry.ID)
-		log.Printf("error creating desktopEdit form: %v", err)
+		if err != nil {
+			log.Printf("error creating desktopEdit form: %v", err)
+		}
 		appState.window.SetContent(editForm)
 		popup.Hide()
 	}

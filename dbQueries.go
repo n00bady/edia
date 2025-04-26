@@ -101,6 +101,29 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	return nil
 }
 
+func updateEntry(db *sql.DB, entry Entry) error {
+	updateSQL := `
+		Update entries Set LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? Where id = ?
+	`
+	updateSQLCoords := `
+		Update coordinates Set Latitude = ?, Longitude = ? Where entry_id = ?
+	`
+	_, err := db.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+	if err != nil {
+		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
+	}
+
+	for i := range 4 {
+		_, err = db.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID)
+		if err != nil {
+			return fmt.Errorf("error updating coordinates for entry with id: %d: %v", entry.ID, err)
+		}
+	}
+	log.Printf("Updated entry %d successfully!", entry.ID)
+
+	return nil
+}
+
 // TODO: query to retrieve and entry for display
 func getAll(db *sql.DB) ([]Entry, error) {
 	selectSQL := `
@@ -161,7 +184,6 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 		}
 		entry.Coords = append(entry.Coords, coord)
 	}
-
 
 	return &entry, nil
 }
