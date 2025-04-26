@@ -35,8 +35,8 @@ func initDB(dbPath string) (*sql.DB, error) {
 			Size REAL NOT NULL,
 			Type TEXT NOT NULL,
 			Rent REAL NOT NULL,
-			Start DATETIME NOT NULL,
-			End DATETIME NOT NULL
+			Start TEXT NOT NULL,
+			End TEXT NOT NULL
         );
 	`
 
@@ -123,6 +123,7 @@ func getAll(db *sql.DB) ([]Entry, error) {
 		entries = append(entries, entry)
 	}
 	log.Printf("Retrieved the results successfully!")
+	log.Printf("RESULTS:\n%v", entries)
 
 	return entries, nil
 }
@@ -144,6 +145,7 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error retrieing entry with id: %d: %v", id, err)
 	}
+	log.Printf("RESULTS:\n%v", entry)
 
 
 	return &entry, nil
