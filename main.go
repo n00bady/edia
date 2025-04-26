@@ -91,7 +91,7 @@ func InitApp() (*AppState, error) {
 func showCalendar(entry *widget.Entry, window fyne.Window) {
 	log.Printf("Showing popup date picker.")
 	calendar := xwidget.NewCalendar(time.Now(), func(t time.Time) {
-		dateString := t.Format("02/01/2006")
+		dateString := t.Format("02-01-2006")
 		entry.SetText(dateString)
 
 		for _, overlay := range window.Canvas().Overlays().List() {

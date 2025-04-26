@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // For the calendar date selection
