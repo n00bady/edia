@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	xwidget "fyne.io/x/fyne/widget"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -57,7 +53,6 @@ func InitApp() (*AppState, error) {
 
 	// This is deprecated will be removed for fyne v3.0
 	// Don't care!
-	// myApp.Settings().SetTheme(theme.DarkTheme())
 	myApp.Settings().SetTheme(&MyTheme{base: theme.DarkTheme()})
 
 	log.Printf("Initializing database...")
@@ -85,20 +80,4 @@ func InitApp() (*AppState, error) {
 		db:     db,
 		window: myWindow,
 	}, nil
-}
-
-// Show Calendar for easy date picking
-func showCalendar(entry *widget.Entry, window fyne.Window) {
-	log.Printf("Showing popup date picker.")
-	calendar := xwidget.NewCalendar(time.Now(), func(t time.Time) {
-		dateString := t.Format("02-01-2006")
-		entry.SetText(dateString)
-
-		for _, overlay := range window.Canvas().Overlays().List() {
-			overlay.Hide()
-		}
-	})
-
-	popup := dialog.NewCustom("Select Date", "Cancel", calendar, window)
-	popup.Show()
 }

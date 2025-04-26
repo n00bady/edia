@@ -101,6 +101,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	return nil
 }
 
+// Update an Entry
 func updateEntry(db *sql.DB, entry Entry) error {
 	updateSQL := `
 		Update entries Set LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? Where id = ?
@@ -124,7 +125,6 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	return nil
 }
 
-// TODO: query to retrieve and entry for display
 func getAll(db *sql.DB) ([]Entry, error) {
 	selectSQL := `
 		SELECT * FROM entries
@@ -150,8 +150,6 @@ func getAll(db *sql.DB) ([]Entry, error) {
 
 	return entries, nil
 }
-
-// TODO: queries for searching a variety of fields
 
 func getEntry(db *sql.DB, id int) (*Entry, error) {
 	selectSQL := `
@@ -187,3 +185,5 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 
 	return &entry, nil
 }
+
+// TODO: queries for searching a variety of fields

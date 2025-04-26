@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Parses a string to d amount of decimals
+// Parses a string to d amount of decimals to float
 func ParseFloatToXDecimals(n string, d int) (float64, error) {
 	if d < 0 || d > 15 {
 		return 0, fmt.Errorf("number of decimals must be non-negative and smaller than 15")

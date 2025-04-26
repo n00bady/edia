@@ -12,7 +12,12 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	xwidget "fyne.io/x/fyne/widget"
 )
+
+// TODO: Clean it up and optimize it a bit, there is a lot of repeating code!
+// Maybe I should create all the widgets I need in a central function and
+// then pass those in different functions according to device and assemple the layouts. 
 
 // This is just the desktopForm copy-pasted but changed the layout and added additional
 // functions specific for mobile use.
@@ -74,8 +79,6 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
 			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
 			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
 
@@ -86,7 +89,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
-		// and the sizekj
+		// and the size
 		size, err := strconv.ParseFloat(acres.Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
@@ -234,8 +237,6 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
 			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
 			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
 
@@ -402,8 +403,6 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			// latValue, errLat := strconv.ParseFloat(lats[i].Text, 64)
-			// longValue, errLon := strconv.ParseFloat(longs[i].Text, 64)
 			latValue, err := ParseFloatToXDecimals(lats[i].Text, 5)
 			if err != nil {
 				log.Printf("Error parsing coordinates: %v", err)
@@ -431,7 +430,7 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		}
 
 		// We build the new entry here
-		newEntry := Entry{
+		editedEntry := Entry{
 			ID:           entry.ID,
 			LandlordName: landlord_name.Text,
 			RenterName:   renter_name.Text,
@@ -444,15 +443,14 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 			Rent:         money,
 		}
 
-		// err = saveEntry(appState.db, newEntry)
-		err = updateEntry(appState.db, newEntry)
+		err = updateEntry(appState.db, editedEntry)
 		if err != nil {
 			log.Printf("Error saving entry: %v", err)
 			dialog.ShowError(err, appState.window)
 			return
 		}
 
-		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
+		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", editedEntry.LandlordName, editedEntry.RenterName, editedEntry.Rent)
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
@@ -647,4 +645,22 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 
 	popup.Show()
 	fmt.Printf("Popup displayed for: %d", entry.ID)
+}
+
+// Show Calendar for easy date picking
+// There is another calendar widget floating around maybe I should check it out
+// or customize this to add a button for the year?
+func showCalendar(entry *widget.Entry, window fyne.Window) {
+	log.Printf("Showing popup date picker.")
+	calendar := xwidget.NewCalendar(time.Now(), func(t time.Time) {
+		dateString := t.Format("02-01-2006")
+		entry.SetText(dateString)
+
+		for _, overlay := range window.Canvas().Overlays().List() {
+			overlay.Hide()
+		}
+	})
+
+	popup := dialog.NewCustom("Select Date", "Cancel", calendar, window)
+	popup.Show()
 }
