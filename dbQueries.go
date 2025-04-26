@@ -132,7 +132,10 @@ func getAll(db *sql.DB) ([]Entry, error) {
 
 func getEntry(db *sql.DB, id int) (*Entry, error) {
 	selectSQL := `
-		Select * From entries WHERE ID = ?
+		Select * From entries Where ID = ?
+	`
+	selectSQLForCoords := `
+		Select latitude, longitude From coordinates Where entry_id = ?
 	`
 	var entry Entry
 
@@ -143,9 +146,21 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 		return nil, err
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error retrieing entry with id: %d: %v", id, err)
+		return nil, fmt.Errorf("error retrieving entry with id: %d: %v", id, err)
 	}
-	log.Printf("RESULTS:\n%v", entry)
+
+	resultCoords, err := db.Query(selectSQLForCoords, id)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving coordinates for entry with id: %d: %v", id, err)
+	}
+	for resultCoords.Next() {
+		var coord Coordinate
+		err := resultCoords.Scan(&coord.Latitude, &coord.Longitude)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving coordinates for entry with id: %d: %v", id, err)
+		}
+		entry.Coords = append(entry.Coords, coord)
+	}
 
 
 	return &entry, nil

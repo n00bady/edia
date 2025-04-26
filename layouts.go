@@ -106,7 +106,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 			Size:         size,
 			Type:         t.Text,
 			Start:        start_input.Text,
-			End:          start_input.Text,
+			End:          end_input.Text,
 			Rent:         money,
 		}
 
@@ -264,7 +264,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 			Size:         size,
 			Type:         t.Text,
 			Start:        start_input.Text,
-			End:          start_input.Text,
+			End:          end_input.Text,
 			Rent:         money,
 		}
 
@@ -350,11 +350,24 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 	// I hate this
 	lats := make([]*widget.Entry, 4)
 	longs := make([]*widget.Entry, 4)
-	for i := range 4 {
-		lats[i] = widget.NewEntry()
-		lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
-		longs[i] = widget.NewEntry()
-		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
+	log.Printf("entry.Coords length: %d", len(entry.Coords))
+	if len(entry.Coords) == 4 {
+		for i := range 4 {
+			lats[i] = widget.NewEntry()
+			platos := strconv.FormatFloat(entry.Coords[i].Latitude, 'f', -1, 64)
+			lats[i].SetPlaceHolder(platos)
+
+			longs[i] = widget.NewEntry()
+			mhkos := strconv.FormatFloat(entry.Coords[i].Longitude, 'f', -1, 64)
+			longs[i].SetPlaceHolder(mhkos)
+		}
+	} else {
+		for i := range 4 {
+			lats[i] = widget.NewEntry()
+			lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
+			longs[i] = widget.NewEntry()
+			longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
+		}
 	}
 
 	acres := widget.NewEntry()
@@ -417,7 +430,7 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 			Size:         size,
 			Type:         t.Text,
 			Start:        start_input.Text,
-			End:          start_input.Text,
+			End:          end_input.Text,
 			Rent:         money,
 		}
 
