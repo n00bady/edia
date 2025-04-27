@@ -17,7 +17,7 @@ import (
 
 // TODO: Clean it up and optimize it a bit, there is a lot of repeating code!
 // Maybe I should create all the widgets I need in a central function and
-// then pass those in different functions according to device and assemple the layouts. 
+// then pass those in different functions according to device and assemple the layouts.
 
 // This is just the desktopForm copy-pasted but changed the layout and added additional
 // functions specific for mobile use.
@@ -40,7 +40,8 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	for i := range 4 {
 		lats[i] = widget.NewEntry()
 		lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
-		longs[i] = widget.NewEntry()
+
+		longs[i] = widget.NewEntry() 
 		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
 	}
 	coords_inputs := container.New(
@@ -80,7 +81,16 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
 			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
+			if ok, _ := IsValidLatitude(latValue); !ok {
+				dialog.ShowInformation("Not Valid Value", "Latitude must be beteween -90 to 90.", appState.window)
+				return
+			}
+
 			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
+			if ok, _ := IsValidLongitude(longValue); !ok {
+				dialog.ShowInformation("Not Valid Value", "Longitude must be between -180 to 180.", appState.window)
+				return
+			}
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
@@ -89,17 +99,26 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
-		// and the size
+
 		size, err := strconv.ParseFloat(acres.Text, 64)
+		size = TruncateFloatTo2Decimals(size)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
 			dialog.ShowError(err, appState.window)
 		}
+		if ok, _ := IsNegative(size); ok {
+			dialog.ShowInformation("Negative Value", "Size cannot be negative.", appState.window)
+			return
+		}
 
-		money, err := strconv.ParseFloat(r.Text, 32)
+		money, err := strconv.ParseFloat(r.Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
+		}
+		money = TruncateFloatTo2Decimals(money)
+		if ok, _ := IsNegative(money); ok {
+			dialog.ShowInformation("Negative Value", "Renting Price cannot be negative.", appState.window)
 		}
 
 		// We build the new entry here
@@ -172,7 +191,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		),
 	)
 
-	allInputs := []*widget.Entry{
+	allInputs := []fyne.CanvasObject{
 		landlord_name,
 		renter_name,
 		lats[0], longs[0],
@@ -596,14 +615,27 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func focusChain(inputs []*widget.Entry, appState *AppState) {
+// if and when the xwidget.NumericalEntry works this will actually be usefull
+func focusChain(inputs []fyne.CanvasObject, appState *AppState) {
 	for i, input := range inputs {
-		input.OnSubmitted = func(_ string) {
-			if i < len(inputs)-1 {
-				appState.window.Canvas().Focus(inputs[i+1])
-			} else {
-				input.Disable()
-				input.Enable()
+		switch e := input.(type) {
+		case *widget.Entry:
+			e.OnSubmitted = func(_ string) {
+				if i < len(inputs)-1 {
+					appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
+				} else {
+					e.Disable()
+					e.Enable()
+				}
+			}
+		case *xwidget.NumericalEntry:
+			e.OnSubmitted = func(s string) {
+				if i < len(inputs)-1 {
+					appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
+				} else {
+					e.Disable()
+					e.Enable()
+				}
 			}
 		}
 	}
