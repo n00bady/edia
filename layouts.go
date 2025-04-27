@@ -188,6 +188,13 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	log.Printf("mobileForm created successfully.")
 
+	// Unfocuses to prevent tapping every single entry field when draging
+	body.OnScrolled = func(p fyne.Position) {
+		appState.window.Canvas().Unfocus()
+	}
+	// TODO: Figure out an easy way to be able to scroll when you tap and drag
+	// on an entry field.
+
 	return body, nil
 }
 
