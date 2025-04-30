@@ -19,44 +19,39 @@ import (
 // Maybe I should create all the widgets I need in a central function and
 // then pass those in different functions according to device and assemple the layouts.
 
-// This is just the desktopForm copy-pasted but changed the layout and added additional
-// functions specific for mobile use.
+func newEntryWithLabel(ph string) *widget.Entry {
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder(ph)
+
+	return entry
+}
+
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
-	log.Printf("Creating the mobileForm...")
 
-	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	separator := widget.NewSeparator()
-	duration := widget.NewLabel("Διαρκεια")
+	entriesMap := make(map[string]*widget.Entry)
 
-	landlord_name := widget.NewEntry()
-	landlord_name.SetPlaceHolder("Εκμισθωτής")
+	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	durationLabel := widget.NewLabel("Διαρκεια")
 
-	renter_name := widget.NewEntry()
-	renter_name.SetPlaceHolder("Μισθωτής")
-
-	// I hate this
-	lats := make([]*widget.Entry, 4)
-	longs := make([]*widget.Entry, 4)
-	for i := range 4 {
-		lats[i] = widget.NewEntry()
-		lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
-
-		longs[i] = widget.NewEntry() 
-		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
+	labelsEntries := []string{
+		"Εκμισθωτής",
+		"Μισθωτής",
+		"Στρέμματα",
+		"Είδος Καλ/γειας",
+		"Μίσθωμα",
 	}
-	coords_inputs := container.New(
-		layout.NewGridLayoutWithRows(4),
-		lats[0], longs[0],
-		lats[1], longs[1],
-		lats[2], longs[2],
-		lats[3], longs[3],
-	)
 
-	acres := widget.NewEntry()
-	acres.SetPlaceHolder("Στρέμματα")
+	for _, l := range labelsEntries {
+		tmpEnt := newEntryWithLabel(l)
+		entriesMap[l] = tmpEnt
+	}
 
-	t := widget.NewEntry()
-	t.SetPlaceHolder("Ειδος Καλ/γειας")
+	for i := range 4 {
+		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
+		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
+		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
+		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
+	}
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
@@ -64,6 +59,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	startDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(start_input, appState.window)
 	})
+	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
@@ -71,26 +67,15 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	endDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(end_input, appState.window)
 	})
-
-	r := widget.NewEntry()
-	r.SetPlaceHolder("Μίσθωμα")
+	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
-			if ok, _ := IsValidLatitude(latValue); !ok {
-				dialog.ShowInformation("Not Valid Value", "Latitude must be beteween -90 to 90.", appState.window)
-				return
-			}
-
-			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
-			if ok, _ := IsValidLongitude(longValue); !ok {
-				dialog.ShowInformation("Not Valid Value", "Longitude must be between -180 to 180.", appState.window)
-				return
-			}
+			latValue, errLat := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Πλάτος %d", i+1)].Text, 5)
+			longValue, errLon := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Μήκος %d", i+1)].Text, 5)
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
@@ -99,36 +84,27 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
-
-		size, err := strconv.ParseFloat(acres.Text, 64)
-		size = TruncateFloatTo2Decimals(size)
+		// and the size
+		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
 			dialog.ShowError(err, appState.window)
 		}
-		if ok, _ := IsNegative(size); ok {
-			dialog.ShowInformation("Negative Value", "Size cannot be negative.", appState.window)
-			return
-		}
 
-		money, err := strconv.ParseFloat(r.Text, 64)
+		money, err := strconv.ParseFloat(entriesMap["Μίσθωμα"].Text, 32)
 		if err != nil {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
 		}
-		money = TruncateFloatTo2Decimals(money)
-		if ok, _ := IsNegative(money); ok {
-			dialog.ShowInformation("Negative Value", "Renting Price cannot be negative.", appState.window)
-		}
 
 		// We build the new entry here
 		newEntry := Entry{
-			LandlordName: landlord_name.Text,
-			RenterName:   renter_name.Text,
+			LandlordName: entriesMap["Εκμισθωτής"].Text,
+			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
 			Size:         size,
-			Type:         t.Text,
+			Type:         entriesMap["Είδος Καλ/γειας"].Text,
 			Start:        start_input.Text,
 			End:          end_input.Text,
 			Rent:         money,
@@ -145,30 +121,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
-	// Layout for the left container
-	left_container := container.NewVBox(
-		landlord_name,
-		renter_name,
-		separator,
-		separator,
-		coords_l,
-		coords_inputs,
-	)
-
-	// Layout for the right container
-	right_container := container.NewVBox(
-		acres,
-		t,
-		r,
-		duration,
-		start_input,
-		startDateButton,
-		end_input,
-		endDateButton,
-		separator,
-	)
-
-	backButton := widget.NewButton("Go back", func() {
+	backButton := widget.NewButton("Cancel", func() {
 		tmp, err := mainView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
@@ -177,11 +130,33 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
+	// Top half
+	topContainer := container.NewVBox(
+		entriesMap["Εκμισθωτής"],
+		entriesMap["Μισθωτής"],
+		coordsLabel,
+	)
+	for i := range 4 {
+		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		topContainer.Add(coordContainer)
+	}
+
+	// Bottom half
+	bottomContainer := container.NewVBox(
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		entriesMap["Μίσθωμα"],
+		durationLabel,
+		startDateInput,
+		endDateInput,
+	)
+
+	// The whole thing
 	body := container.NewVScroll(
 		container.NewVBox(
-			left_container,
+			topContainer,
 			layout.NewSpacer(),
-			right_container,
+			bottomContainer,
 			container.New(
 				layout.NewHBoxLayout(),
 				layout.NewSpacer(),
@@ -192,15 +167,15 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	)
 
 	allInputs := []fyne.CanvasObject{
-		landlord_name,
-		renter_name,
-		lats[0], longs[0],
-		lats[1], longs[1],
-		lats[2], longs[2],
-		lats[3], longs[3],
-		acres,
-		t,
-		r,
+		entriesMap["Εκμισθωτής"],
+		entriesMap["Μισθωτής"],
+		entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
+		entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
+		entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
+		entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		entriesMap["Μίσθωμα"],
 	}
 
 	focusChain(allInputs, appState)
@@ -219,27 +194,31 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating desktopForm...")
-	landlord_name := widget.NewEntry()
-	landlord_name.SetPlaceHolder("Εκμισθωτής")
 
-	renter_name := widget.NewEntry()
-	renter_name.SetPlaceHolder("Μισθωτής")
+	entriesMap := make(map[string]*widget.Entry)
 
-	// I hate this
-	lats := make([]*widget.Entry, 4)
-	longs := make([]*widget.Entry, 4)
-	for i := range 4 {
-		lats[i] = widget.NewEntry()
-		lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
-		longs[i] = widget.NewEntry()
-		longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
+	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	durationLabel := widget.NewLabel("Διαρκεια")
+
+	labelsEntries := []string{
+		"Εκμισθωτής",
+		"Μισθωτής",
+		"Στρέμματα",
+		"Είδος Καλ/γειας",
+		"Μίσθωμα",
 	}
 
-	acres := widget.NewEntry()
-	acres.SetPlaceHolder("Στρέμματα")
+	for _, l := range labelsEntries {
+		tmpEnt := newEntryWithLabel(l)
+		entriesMap[l] = tmpEnt
+	}
 
-	t := widget.NewEntry()
-	t.SetPlaceHolder("Ειδος Καλ/γειας")
+	for i := range 4 {
+		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
+		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
+		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
+		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
+	}
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
@@ -247,6 +226,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	startDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(start_input, appState.window)
 	})
+	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
@@ -254,17 +234,15 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	endDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(end_input, appState.window)
 	})
-
-	r := widget.NewEntry()
-	r.SetPlaceHolder("Μίσθωμα")
+	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, errLat := ParseFloatToXDecimals(lats[i].Text, 5)
-			longValue, errLon := ParseFloatToXDecimals(longs[i].Text, 5)
+			latValue, errLat := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Πλάτος %d", i+1)].Text, 5)
+			longValue, errLon := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Μήκος %d", i+1)].Text, 5)
 
 			if errLat != nil || errLon != nil {
 				log.Printf("Error parsing coordinates")
@@ -274,13 +252,14 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
 		// and the size
-		size, err := strconv.ParseFloat(acres.Text, 64)
+		// size, err := strconv.ParseFloat(acres.Text, 64)
+		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
 			dialog.ShowError(err, appState.window)
 		}
 
-		money, err := strconv.ParseFloat(r.Text, 32)
+		money, err := strconv.ParseFloat(entriesMap["Μίσθωμα"].Text, 32)
 		if err != nil {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
@@ -288,12 +267,12 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		newEntry := Entry{
-			LandlordName: landlord_name.Text,
-			RenterName:   renter_name.Text,
+			LandlordName: entriesMap["Εκμισθωτής"].Text,
+			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
 			Size:         size,
-			Type:         t.Text,
+			Type:         entriesMap["Είδος Καλ/γειας"].Text,
 			Start:        start_input.Text,
 			End:          end_input.Text,
 			Rent:         money,
@@ -310,36 +289,6 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
-	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	duration := widget.NewLabel("Διαρκεια")
-
-	// Layout for the left container
-	left_container := container.NewVBox(
-		landlord_name,
-		renter_name,
-		coords_l,
-		lats[0],
-		longs[0],
-		lats[1],
-		longs[1],
-		lats[2],
-		longs[2],
-		lats[3],
-		longs[3],
-	)
-
-	// Layout for the right container
-	right_container := container.NewVBox(
-		acres,
-		t,
-		r,
-		duration,
-		start_input,
-		startDateButton,
-		end_input,
-		endDateButton,
-	)
-
 	backButton := widget.NewButton("Cancel", func() {
 		tmp, err := mainView(appState)
 		if err != nil {
@@ -348,6 +297,29 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 		body := container.NewBorder(nil, nil, nil, nil, tmp)
 		appState.window.SetContent(body)
 	})
+
+	// LEFT
+	left_container := container.NewVBox(
+		entriesMap["Εκμισθωτής"],
+		entriesMap["Μισθωτής"],
+		layout.NewSpacer(),
+		coordsLabel,
+	)
+	for i := range 4 {
+		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		left_container.Add(coordContainer)
+	}
+
+	// RIGHT
+	right_container := container.NewVBox(
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		entriesMap["Μίσθωμα"],
+		layout.NewSpacer(),
+		durationLabel,
+		startDateInput,
+		endDateInput,
+	)
 
 	// Putting both left and right containters on a grid
 	content := container.NewGridWithColumns(2, left_container, right_container)
@@ -365,76 +337,77 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
-	entry, err := getEntry(appState.db, id)
+func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
+	log.Printf("Creating desktop edit form...")
+
+	entriesMap := make(map[string]*widget.Entry)
+
+	selectedEntry, err := getEntry(appState.db, id)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("Creating edit form...")
-	landlord_name := widget.NewEntry()
-	landlord_name.SetText(entry.LandlordName)
+	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	durationLabel := widget.NewLabel("Διαρκεια")
 
-	renter_name := widget.NewEntry()
-	renter_name.SetText(entry.RenterName)
-
-	// I hate this
-	lats := make([]*widget.Entry, 4)
-	longs := make([]*widget.Entry, 4)
-	log.Printf("entry.Coords length: %d", len(entry.Coords))
-	if len(entry.Coords) == 4 {
-		for i := range 4 {
-			lats[i] = widget.NewEntry()
-			platos := strconv.FormatFloat(entry.Coords[i].Latitude, 'f', -1, 64)
-			lats[i].SetText(platos)
-
-			longs[i] = widget.NewEntry()
-			mhkos := strconv.FormatFloat(entry.Coords[i].Longitude, 'f', -1, 64)
-			longs[i].SetText(mhkos)
-		}
-	} else {
-		for i := range 4 {
-			lats[i] = widget.NewEntry()
-			lats[i].SetPlaceHolder(fmt.Sprintf("Πλάτος %d", i+1))
-			longs[i] = widget.NewEntry()
-			longs[i].SetPlaceHolder(fmt.Sprintf("Μήκος %d", i+1))
-		}
+	labelsEntries := []string{
+		"Εκμισθωτής",
+		"Μισθωτής",
+		"Στρέμματα",
+		"Είδος Καλ/γειας",
+		"Μίσθωμα",
 	}
 
-	acres := widget.NewEntry()
-	acres.SetText(strconv.FormatFloat(entry.Size, 'f', 3, 64))
+	for _, l := range labelsEntries {
+		tmpEnt := newEntryWithLabel(l)
+		entriesMap[l] = tmpEnt
+	}
 
-	t := widget.NewEntry()
-	t.SetText(entry.Type)
+	// Assign values to entries from the selected Entry
+	entriesMap["Εκμισθωτής"].SetText(selectedEntry.LandlordName)
+	entriesMap["Μισθωτής"].SetText(selectedEntry.RenterName)
+	entriesMap["Στρέμματα"].SetText(strconv.FormatFloat(selectedEntry.Size, 'f', -1, 64))
+	entriesMap["Είδος Καλ/γειας"].SetText(selectedEntry.Type)
+	entriesMap["Μίσθωμα"].SetText(strconv.FormatFloat(selectedEntry.Rent, 'f', -1, 64))
+
+	for i := range 4 {
+		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
+		lat.SetText(strconv.FormatFloat(selectedEntry.Coords[i].Latitude, 'f', -1, 64))
+		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
+
+		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
+		long.SetText(strconv.FormatFloat(selectedEntry.Coords[i].Longitude, 'f', -1, 64))
+		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
+	}
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
-	start_input.SetText(entry.Start)
+	start_input.SetPlaceHolder("ΑΠΟ")
+	start_input.SetText(selectedEntry.Start)
 	startDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(start_input, appState.window)
 	})
+	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
-	end_input.SetText(entry.End)
+	end_input.SetPlaceHolder("ΕΩΣ")
+	start_input.SetText(selectedEntry.End)
 	endDateButton := widget.NewButton("Pick a date", func() {
 		showCalendar(end_input, appState.window)
 	})
+	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
 
-	r := widget.NewEntry()
-	r.SetText(strconv.FormatFloat(entry.Rent, 'f', 2, 64))
-
-	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinate, 0, 4)
 		for i := range 4 {
-			latValue, err := ParseFloatToXDecimals(lats[i].Text, 5)
+			latValue, err := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Πλάτος %d", i+1)].Text, 5)
 			if err != nil {
 				log.Printf("Error parsing coordinates: %v", err)
 				dialog.ShowError(err, appState.window)
 			}
-			longValue, err := ParseFloatToXDecimals(longs[i].Text, 5)
+			longValue, err := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Μήκος %d", i+1)].Text, 5)
 			if err != nil {
 				log.Printf("Error parsing coordinates: %v", err)
 				dialog.ShowError(err, appState.window)
@@ -443,13 +416,13 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
 		}
 		// and the size
-		size, err := strconv.ParseFloat(acres.Text, 64)
+		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
 		if err != nil {
 			log.Printf("Error parsing the size of the land")
 			dialog.ShowError(err, appState.window)
 		}
 
-		money, err := strconv.ParseFloat(r.Text, 32)
+		money, err := strconv.ParseFloat(entriesMap["Μίσθωμα"].Text, 32)
 		if err != nil {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
@@ -457,13 +430,12 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		editedEntry := Entry{
-			ID:           entry.ID,
-			LandlordName: landlord_name.Text,
-			RenterName:   renter_name.Text,
+			LandlordName: entriesMap["Εκμισθωτής"].Text,
+			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
 			Size:         size,
-			Type:         t.Text,
+			Type:         entriesMap["Είδος Καλ/γειας"].Text,
 			Start:        start_input.Text,
 			End:          end_input.Text,
 			Rent:         money,
@@ -480,36 +452,6 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
-	coords_l := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	duration := widget.NewLabel("Διαρκεια")
-
-	// Layout for the left container
-	left_container := container.NewVBox(
-		landlord_name,
-		renter_name,
-		coords_l,
-		lats[0],
-		longs[0],
-		lats[1],
-		longs[1],
-		lats[2],
-		longs[2],
-		lats[3],
-		longs[3],
-	)
-
-	// Layout for the right container
-	right_container := container.NewVBox(
-		acres,
-		t,
-		r,
-		duration,
-		start_input,
-		startDateButton,
-		end_input,
-		endDateButton,
-	)
-
 	backButton := widget.NewButton("Cancel", func() {
 		tmp, err := mainView(appState)
 		if err != nil {
@@ -518,6 +460,29 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		body := container.NewBorder(nil, nil, nil, nil, tmp)
 		appState.window.SetContent(body)
 	})
+
+	// LEFT
+	left_container := container.NewVBox(
+		entriesMap["Εκμισθωτής"],
+		entriesMap["Μισθωτής"],
+		layout.NewSpacer(),
+		coordsLabel,
+	)
+	for i := range 4 {
+		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		left_container.Add(coordContainer)
+	}
+
+	// RIGHT
+	right_container := container.NewVBox(
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		entriesMap["Μίσθωμα"],
+		layout.NewSpacer(),
+		durationLabel,
+		startDateInput,
+		endDateInput,
+	)
 
 	// Putting both left and right containters on a grid
 	content := container.NewGridWithColumns(2, left_container, right_container)
@@ -529,8 +494,6 @@ func desktopEdit(appState *AppState, id int) (fyne.CanvasObject, error) {
 		layout.NewSpacer(),
 		buttons,
 	)
-
-	log.Printf("edit form created successfully.")
 
 	return body, nil
 }
@@ -644,17 +607,42 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState) {
 // Details popup for the list
 func showDetailsPopup(entry Entry, appState *AppState) {
 	log.Printf("Showing popup for: %d", entry.ID)
+
+	editButton := widget.NewButton("Edit", nil)
+	closeButton := widget.NewButton("Close", nil)
+	deleteButton := widget.NewButton("Delete", nil)
+
+	buttonsContainer := container.NewVBox(
+		closeButton,
+		container.NewGridWithColumns(2, editButton, deleteButton),
+	)
+
+	// TODO: Did I forget about coordinates ???
+	fmt.Printf("Coords: %d", len(entry.Coords))
+	coordsContainer := container.NewVBox()
+	// for i := range 4 {
+	// 	lat := fmt.Sprintf("Πλάτος %d: %s", i, strconv.FormatFloat(entry.Coords[i].Latitude, 'f', -1, 64))
+	// 	long := fmt.Sprintf("Μήκος %d: %s", i, strconv.FormatFloat(entry.Coords[i].Longitude, 'f', -1, 64))
+	// 	coordContainer := container.NewGridWithColumns(2, widget.NewLabel(lat), widget.NewLabel(long))
+	// 	coordContainer.Add(coordContainer)
+	// }
+
+	// Add all the details!
 	content := container.NewVBox(
 		widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
-		widget.NewLabel(fmt.Sprintf("Timestamp: %s", entry.Timestamp)),
-		widget.NewLabel(fmt.Sprintf("Landlord: %s", entry.LandlordName)),
-		widget.NewLabel(fmt.Sprintf("Renter: %s", entry.RenterName)),
-		widget.NewLabel(fmt.Sprintf("Rent: %f€", entry.Rent)),
-		widget.NewLabel(fmt.Sprintf("From: %s", entry.Start)),
-		widget.NewLabel(fmt.Sprintf("To: %s", entry.End)),
-		widget.NewButton("Edit", nil),
-		widget.NewButton("Close", nil),
+		widget.NewLabel(fmt.Sprintf("Εκμισθωτής: %s", entry.LandlordName)),
+		widget.NewLabel(fmt.Sprintf("Μισθωτής: %s", entry.RenterName)),
+		widget.NewLabel(fmt.Sprintf("Μίσθωμα: %.2f€", entry.Rent)),
+		widget.NewLabel(fmt.Sprintf("ΑΠΟ: %s", entry.Start)),
+		widget.NewLabel(fmt.Sprintf("ΕΩΣ: %s", entry.End)),
+		widget.NewLabel(fmt.Sprintf("Είδος Καλ/γειας: %s", entry.Type)),
+		widget.NewLabel(fmt.Sprintf("Στρέμματα: %.3f", entry.Size)),
+		layout.NewSpacer(),
+		coordsContainer,
+		buttonsContainer,
 	)
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
 
 	// Iterate over all canvas objects of content
 	// and if its a label enable text wrapping
@@ -664,19 +652,20 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 		}
 	}
 
-	popup := widget.NewModalPopUp(content, appState.window.Canvas())
-
-	// Popup close button
-	content.Objects[len(content.Objects)-1].(*widget.Button).OnTapped = func() {
-		popup.Hide()
-	}
-	content.Objects[len(content.Objects)-2].(*widget.Button).OnTapped = func() {
-		editForm, err := desktopEdit(appState, entry.ID)
+	editButton.OnTapped = func() {
+		editForm, err := desktopEditForm(appState, entry.ID)
 		if err != nil {
-			log.Printf("error creating desktopEdit form: %v", err)
+			log.Printf("error creating desktopEditForm for %d: %v", entry.ID, err)
 		}
 		appState.window.SetContent(editForm)
 		popup.Hide()
+	}
+	closeButton.OnTapped = func() {
+		popup.Hide()
+	}
+	deleteButton.OnTapped = func() {
+		// WIP
+		dialog.ShowInformation("Not yet", "Not implemented yet...", appState.window)
 	}
 
 	contentMinHeight := content.MinSize().Height
