@@ -186,4 +186,47 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 	return &entry, nil
 }
 
+func delEntry(db *sql.DB, id int) error {
+	delCoordsSQL := `
+		Delete From coordinates Where entry_id = ?
+	`
+	delEntrySQL2 := `
+		Delete From entries Where id = ?
+	`
+	log.Printf("Deleting entry %d and it's coordinates", id)
+
+	log.Printf("Deleting coordinates for entry: %d", id)
+	_, err := db.Exec(delCoordsSQL, id)
+	if err != nil {
+		return fmt.Errorf("could not delete coordinates for entry %d", id)
+	}
+
+	log.Printf("Deleting entry %d from entries.", id)
+	_, err = db.Exec(delEntrySQL2, id)
+	if err != nil {
+		return fmt.Errorf("could not delete entry: %d", id)
+	}
+
+	log.Printf("Reseting sqlite autoincrement.")
+	resetAutoIncrement(db)
+
+	log.Printf("Deleted entry %d successfully!", id)
+
+	return nil
+}
+
+func resetAutoIncrement(db *sql.DB) error {
+	_, err := db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM entries) WHERE name = 'entries'")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM coordinates) WHERE name = 'coordinates'")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // TODO: queries for searching a variety of fields

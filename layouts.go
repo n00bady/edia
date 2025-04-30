@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,10 +16,6 @@ import (
 	xwidget "fyne.io/x/fyne/widget"
 )
 
-// TODO: Clean it up and optimize it a bit, there is a lot of repeating code!
-// Maybe I should create all the widgets I need in a central function and
-// then pass those in different functions according to device and assemple the layouts.
-
 func newEntryWithLabel(ph string) *widget.Entry {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder(ph)
@@ -27,7 +24,6 @@ func newEntryWithLabel(ph string) *widget.Entry {
 }
 
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
-
 	entriesMap := make(map[string]*widget.Entry)
 
 	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
@@ -514,6 +510,10 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			return widget.NewLabel("Template")
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			if err != nil {
+				dialog.ShowError(err, appState.window)
+				os.Exit(1)
+			}
 			log.Printf("Updating item with ID: %d", lii)
 			if lii < 0 || lii >= len(entries) {
 				log.Printf("Invalid item ID: %d", lii)
@@ -533,7 +533,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		log.Printf("Selected item: %d", id)
 		if id >= 0 && id < len(entries) {
 			log.Printf("Showing popup for item: %d", entries[id].ID)
-			showDetailsPopup(entries[id], appState)
+			showDetailsPopup(entries[id], appState, list, &entries)
 			list.UnselectAll()
 		}
 	}
@@ -605,7 +605,7 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState) {
 }
 
 // Details popup for the list
-func showDetailsPopup(entry Entry, appState *AppState) {
+func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry) {
 	log.Printf("Showing popup for: %d", entry.ID)
 
 	editButton := widget.NewButton("Edit", nil)
@@ -664,8 +664,22 @@ func showDetailsPopup(entry Entry, appState *AppState) {
 		popup.Hide()
 	}
 	deleteButton.OnTapped = func() {
-		// WIP
-		dialog.ShowInformation("Not yet", "Not implemented yet...", appState.window)
+		err := delEntry(appState.db, entry.ID)
+		if err != nil {
+			dialog.ShowError(err, appState.window)
+		}
+		dialog.ShowInformation("Deleted", fmt.Sprintf("Deteled entry %d!", entry.ID), appState.window)
+		if err != nil {
+			dialog.ShowError(err, appState.window)
+		}
+		// Need to do all that to update the list in the mainView after a deletion
+		// TODO: Maybe make it better
+		*entries, err = getAll(appState.db)
+		if err != nil {
+			log.Printf("Error updating the list: %v", err)
+		}
+		list.Refresh()
+		popup.Hide()
 	}
 
 	contentMinHeight := content.MinSize().Height
