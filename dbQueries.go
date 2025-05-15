@@ -103,23 +103,36 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 // Update an Entry
 func updateEntry(db *sql.DB, entry Entry) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("error starting a database transaction: %v", err)
+	}
+
 	updateSQL := `
-		Update entries Set LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? Where id = ?
-	`
+		UPDATE entries SET LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
 	updateSQLCoords := `
-		Update coordinates Set Latitude = ?, Longitude = ? Where entry_id = ?
-	`
-	_, err := db.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ?`
+
+	res, err := tx.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+	log.Printf("Update entries result: %s", res)
 	if err != nil {
 		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
 	}
 
 	for i := range 4 {
-		_, err = db.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID)
+		res, err = tx.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID)
+		log.Printf("Update coordinates %d result: %s", i, res)
 		if err != nil {
 			return fmt.Errorf("error updating coordinates for entry with id: %d: %v", entry.ID, err)
 		}
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error commiting transaction: %v", err)
+	}
+
 	log.Printf("Updated entry %d successfully!", entry.ID)
 
 	return nil

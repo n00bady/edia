@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -26,7 +27,7 @@ func newEntryWithLabel(ph string) *widget.Entry {
 func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
-	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	labelsEntries := []string{
@@ -52,18 +53,18 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
-	startDateButton := widget.NewButton("Pick a date", func() {
+	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(start_input, appState.window)
 	})
-	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
+	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
-	endDateButton := widget.NewButton("Pick a date", func() {
+	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(end_input, appState.window)
 	})
-	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
+	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -126,64 +127,58 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
-	// Top half
-	topContainer := container.NewVBox(
+	leftContainer := container.NewVBox(
 		entriesMap["Εκμισθωτής"],
 		entriesMap["Μισθωτής"],
+		layout.NewSpacer(),
 		coordsLabel,
 	)
 	for i := range 4 {
 		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		topContainer.Add(coordContainer)
+		leftContainer.Add(coordContainer)
 	}
 
-	// Bottom half
-	bottomContainer := container.NewVBox(
+	rightContainer := container.NewVBox(
 		entriesMap["Στρέμματα"],
 		entriesMap["Είδος Καλ/γειας"],
 		entriesMap["Μίσθωμα"],
+		layout.NewSpacer(),
 		durationLabel,
 		startDateInput,
 		endDateInput,
 	)
 
-	// The whole thing
-	body := container.NewVScroll(
-		container.NewVBox(
-			topContainer,
-			layout.NewSpacer(),
-			bottomContainer,
-			container.New(
-				layout.NewHBoxLayout(),
-				layout.NewSpacer(),
-				backButton,
-				saveBtn,
-			),
-		),
+	content := container.NewGridWithColumns(2, leftContainer, rightContainer)
+	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
+
+	body := container.NewVBox(
+		content,
+		layout.NewSpacer(),
+		buttons,
 	)
 
 	allInputs := []fyne.CanvasObject{
 		entriesMap["Εκμισθωτής"],
 		entriesMap["Μισθωτής"],
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		entriesMap["Μίσθωμα"],
 		entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
 		entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
 		entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
 		entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
-		entriesMap["Στρέμματα"],
-		entriesMap["Είδος Καλ/γειας"],
-		entriesMap["Μίσθωμα"],
 	}
-
-	focusChain(allInputs, appState)
-
-	log.Printf("mobileForm created successfully.")
 
 	// Unfocuses to prevent tapping every single entry field when draging
-	body.OnScrolled = func(p fyne.Position) {
-		appState.window.Canvas().Unfocus()
-	}
+	// body.OnScrolled = func(p fyne.Position) {
+	// 	appState.window.Canvas().Unfocus()
+	// }
 	// TODO: Figure out an easy way to be able to scroll when you tap and drag
 	// on an entry field.
+
+	focusChain(allInputs, appState, body)
+
+	log.Printf("mobileForm created successfully.")
 
 	return body, nil
 }
@@ -219,18 +214,18 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
-	startDateButton := widget.NewButton("Pick a date", func() {
+	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(start_input, appState.window)
 	})
-	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
+	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
-	endDateButton := widget.NewButton("Pick a date", func() {
+	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(end_input, appState.window)
 	})
-	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
+	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -343,7 +338,7 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
+	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	labelsEntries := []string{
@@ -380,19 +375,19 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
 	start_input.SetText(selectedEntry.Start)
-	startDateButton := widget.NewButton("Pick a date", func() {
+	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(start_input, appState.window)
 	})
-	startDateInput := container.NewGridWithColumns(2, start_input, startDateButton)
+	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
 
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
-	start_input.SetText(selectedEntry.End)
-	endDateButton := widget.NewButton("Pick a date", func() {
+	end_input.SetText(selectedEntry.End)
+	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(end_input, appState.window)
 	})
-	endDateInput := container.NewGridWithColumns(2, end_input, endDateButton)
+	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
@@ -579,16 +574,29 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 }
 
 // if and when the xwidget.NumericalEntry works this will actually be usefull
-func focusChain(inputs []fyne.CanvasObject, appState *AppState) {
+func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer *fyne.Container) {
+	lastInput := inputs[len(inputs)-1]
 	for i, input := range inputs {
 		switch e := input.(type) {
 		case *widget.Entry:
 			e.OnSubmitted = func(_ string) {
-				if i < len(inputs)-1 {
-					appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
+				// if i < len(inputs)-1 {
+				// 	appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
+				//
+				// 	// TODO: Fix the scrolling when focusing on the next entry
+				// 	offSet := inputs[i+1].Position()
+				// 	scrollContainer.ScrollToOffset(offSet)
+				// } else {
+				// 	fyne.CurrentDevice().(mobile.Device).HideVirtualKeyboard()
+				// 	// e.Disable()
+				// 	// e.Enable()
+				// }
+				if input == lastInput {
+					fyne.CurrentDevice().(mobile.Device).HideVirtualKeyboard()
+					appState.window.Canvas().Unfocus()
 				} else {
-					e.Disable()
-					e.Enable()
+					// appState.window.Canvas().FocusNext()
+					appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
 				}
 			}
 		case *xwidget.NumericalEntry:
@@ -596,8 +604,9 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState) {
 				if i < len(inputs)-1 {
 					appState.window.Canvas().Focus(inputs[i+1].(fyne.Focusable))
 				} else {
-					e.Disable()
-					e.Enable()
+					fyne.CurrentDevice().(mobile.Device).HideVirtualKeyboard()
+					// e.Disable()
+					// e.Enable()
 				}
 			}
 		}

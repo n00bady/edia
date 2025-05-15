@@ -61,3 +61,19 @@ func IsNegative(f float64) (bool, error) {
 func TruncateFloatTo2Decimals(f float64) float64 {
 	return float64(int(f*100))/100
 }
+
+// Calculates the absolute Y pos
+// func getAbsoluteY(obj fyne.CanvasObject, relative fyne.CanvasObject) float32 {
+// 	var y float32
+// 	curr := obj
+// 	for curr != nil && curr != relative {
+// 		pos := curr.Position()
+// 		y += pos.Y
+//
+// 		if parent, ok := obj.(*container.Scroll); ok {
+// 			curr = parent.Content
+// 		}
+// 	}
+//
+// 	return y
+// }
