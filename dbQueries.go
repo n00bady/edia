@@ -103,25 +103,60 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 // Update an Entry
 func updateEntry(db *sql.DB, entry Entry) error {
+
+	// Get the IDs of the coordinates first
+	getCoordsSQL := `SELECT id FROM coordinates WHERE entry_id = ? ORDER BY id`
+	getCoords, err := db.Query(getCoordsSQL, entry.ID)
+	if err != nil {
+		return fmt.Errorf("could not query the database for the coordinates IDs: %s", err)
+	}
+	var coord_IDs []int
+	for getCoords.Next() {
+		var id int
+		err := getCoords.Scan(&id)
+		if err != nil {
+			return fmt.Errorf("could not get coordinates IDs for entery: %d", entry.ID)
+		}
+		coord_IDs = append(coord_IDs, id)
+	}
+	log.Printf("coord_IDs: %v", coord_IDs)
+	getCoords.Close()
+
+	// Now we can update the the entries and the coordinates tables properly
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("error starting a database transaction: %v", err)
 	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 
 	updateSQL := `
 		UPDATE entries SET LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
 	updateSQLCoords := `
-		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ?`
+		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
 
 	res, err := tx.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
-	log.Printf("Update entries result: %s", res)
+	rowsAff, RowErr := res.RowsAffected()
+	log.Printf("Rows Affected: %d", rowsAff)
+	log.Printf("Result error: %s", RowErr)
 	if err != nil {
 		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
 	}
 
-	for i := range 4 {
-		res, err = tx.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID)
-		log.Printf("Update coordinates %d result: %s", i, res)
+
+	if len(entry.Coords) > 4 || len(entry.Coords) < 1 {
+		tx.Rollback()
+		return fmt.Errorf("expected up to 4 pair of coordinates got %d, for entry ID: %d", len(entry.Coords), entry.ID)
+	}
+
+	for i := range len(entry.Coords) {
+		res, err = tx.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID, coord_IDs[i])
+		tmpRows, rowErr := res.RowsAffected()
+		log.Printf("Update coordinates %d rows affected: %d", i+1, tmpRows)
+		log.Printf("Result error: %s", rowErr)
 		if err != nil {
 			return fmt.Errorf("error updating coordinates for entry with id: %d: %v", entry.ID, err)
 		}

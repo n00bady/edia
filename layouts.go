@@ -395,11 +395,13 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		for i := range 4 {
 			latValue, err := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Πλάτος %d", i+1)].Text, 5)
 			if err != nil {
+				latValue = 0
 				log.Printf("Error parsing coordinates: %v", err)
 				dialog.ShowError(err, appState.window)
 			}
 			longValue, err := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Μήκος %d", i+1)].Text, 5)
 			if err != nil {
+				longValue = 0
 				log.Printf("Error parsing coordinates: %v", err)
 				dialog.ShowError(err, appState.window)
 			}
@@ -421,6 +423,7 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		editedEntry := Entry{
+			ID:           id,
 			LandlordName: entriesMap["Εκμισθωτής"].Text,
 			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
@@ -439,7 +442,7 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 			return
 		}
 
-		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", editedEntry.LandlordName, editedEntry.RenterName, editedEntry.Rent)
+		log.Printf("Saved entry: %d", editedEntry.ID)
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 	})
 
