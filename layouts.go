@@ -93,6 +93,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
 		}
+		money = TruncateFloatTo2Decimals(money)
 
 		// We build the new entry here
 		newEntry := Entry{
@@ -255,6 +256,7 @@ func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
 		}
+		money = TruncateFloatTo2Decimals(money)
 
 		// We build the new entry here
 		newEntry := Entry{
@@ -420,6 +422,7 @@ func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 			log.Printf("Error parsing the rent price")
 			dialog.ShowError(err, appState.window)
 		}
+		money = TruncateFloatTo2Decimals(money)
 
 		// We build the new entry here
 		editedEntry := Entry{
