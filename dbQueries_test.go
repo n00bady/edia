@@ -19,13 +19,13 @@ func TestUpdateEntry(t *testing.T) {
     // Sample entry for testing
     entry := Entry{
         ID:           1,
-        LandlordName: "John Doe",
-        RenterName:   "Jane Smith",
+        LandlordName: "Γιαννάκης Ελάφις",
+        RenterName:   "Γιάννα Σμιθερίδη",
         Size:         100.5,
-        Type:         "Apartment",
+        Type:         "Ζαρζαβατικά",
         Rent:         1500.0,
-        Start:        "2023-01-01",
-        End:          "2023-12-31",
+        Start:        "2028-01-01",
+        End:          "2025-12-31",
         Coords: []Coordinate{
             {Latitude: 40.7128, Longitude: -74.0060},
             {Latitude: 40.7129, Longitude: -74.0061},
