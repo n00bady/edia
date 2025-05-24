@@ -139,12 +139,12 @@ func updateEntry(db *sql.DB, entry Entry) error {
 		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
 
 	res, err := tx.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
-	rowsAff, RowErr := res.RowsAffected()
-	log.Printf("Rows Affected: %d", rowsAff)
-	log.Printf("Result error: %s", RowErr)
 	if err != nil {
 		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
 	}
+	rowsAff, RowErr := res.RowsAffected()
+	log.Printf("Rows Affected: %d", rowsAff)
+	log.Printf("Result error: %s", RowErr)
 
 
 	if len(entry.Coords) > 4 || len(entry.Coords) < 1 {
@@ -256,7 +256,10 @@ func delEntry(db *sql.DB, id int) error {
 	}
 
 	log.Printf("Reseting sqlite autoincrement.")
-	resetAutoIncrement(db)
+	err = resetAutoIncrement(db)
+	if err != nil {
+		return fmt.Errorf("reset autoincrement error")
+	}
 
 	log.Printf("Deleted entry %d successfully!", id)
 
