@@ -12,7 +12,7 @@ import (
 
 // Initialize the DB if it doesn't exists
 func initDB(dbPath string) (*sql.DB, error) {
-	// Make sure that the directory exists (old android version need this)
+	// Make sure that the directory exists (old android version needs this)
 	log.Printf("Initializing database...")
 	err := os.MkdirAll(filepath.Dir(dbPath), 0755)
 	if err != nil {
@@ -25,7 +25,6 @@ func initDB(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error opening database: %v", err)
 	}
 
-	// This is a placeholder needs to be change according with the Entry struct!
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
