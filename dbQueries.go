@@ -14,7 +14,7 @@ import (
 func initDB(dbPath string) (*sql.DB, error) {
 	// Make sure that the directory exists (old android version needs this)
 	log.Printf("Initializing database...")
-	err := os.MkdirAll(filepath.Dir(dbPath), 0755)
+	err := os.MkdirAll(filepath.Dir(dbPath), 0o755)
 	if err != nil {
 		return nil, fmt.Errorf("error creating directory: %v", err)
 	}
@@ -28,6 +28,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+			NickName TEXT NOT NUll,
 			Timestamp DATETIME NOT NULL,
 			LandLord TEXT NOT NULL,
 			Renter TEXT NOT NULL,
@@ -69,12 +70,12 @@ func initDB(dbPath string) (*sql.DB, error) {
 // Save an entry
 func saveEntry(db *sql.DB, entry Entry) error {
 	insertSQL := `
-        INSERT INTO entries (Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO entries (NickName, Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	log.Printf("Saving new entry in the database...")
-	result, err := db.Exec(insertSQL, entry.Timestamp, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return fmt.Errorf("error inserting entry: %v", err)
 	}
@@ -102,7 +103,6 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 // Update an Entry
 func updateEntry(db *sql.DB, entry Entry) error {
-
 	// Get the IDs of the coordinates first
 	getCoordsSQL := `SELECT id FROM coordinates WHERE entry_id = ? ORDER BY id`
 	getCoords, err := db.Query(getCoordsSQL, entry.ID)
@@ -145,7 +145,6 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	log.Printf("Rows Affected: %d", rowsAff)
 	log.Printf("Result error: %s", RowErr)
 
-
 	if len(entry.Coords) > 4 || len(entry.Coords) < 1 {
 		tx.Rollback()
 		return fmt.Errorf("expected up to 4 pair of coordinates got %d, for entry ID: %d", len(entry.Coords), entry.ID)
@@ -186,7 +185,7 @@ func getAll(db *sql.DB) ([]Entry, error) {
 	var entries []Entry
 	for result.Next() {
 		var entry Entry
-		err := result.Scan(&entry.ID, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving entries from database: %v", err)
 		}

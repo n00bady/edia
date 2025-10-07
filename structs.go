@@ -30,6 +30,7 @@ type Coordinate struct {
 // farm land
 type Entry struct {
 	ID           int
+	NickName     string
 	Timestamp    time.Time
 	RenterName   string
 	LandlordName string

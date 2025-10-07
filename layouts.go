@@ -24,13 +24,14 @@ func newEntryWithLabel(ph string) *widget.Entry {
 	return entry
 }
 
-func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
+func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
 	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	labelsEntries := []string{
+		"Όνομα Εγγραφής",
 		"Εκμισθωτής",
 		"Μισθωτής",
 		"Στρέμματα",
@@ -97,6 +98,7 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		newEntry := Entry{
+			NickName:     entriesMap["Όνομα Εγγραφής"].Text,
 			LandlordName: entriesMap["Εκμισθωτής"].Text,
 			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
@@ -117,8 +119,17 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 
 		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
+
+		// return to mainView
+		mainview, err := mainView(appState)
+		if err != nil {
+			log.Printf("error constructing list layout: %v", err)
+			dialog.ShowError(err, appState.window)
+		}
+		appState.window.SetContent(mainview)
 	})
 
+	// Cancel button to go back
 	backButton := widget.NewButton("Cancel", func() {
 		tmp, err := mainView(appState)
 		if err != nil {
@@ -128,209 +139,111 @@ func mobileForm(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
-	leftContainer := container.NewVBox(
-		entriesMap["Εκμισθωτής"],
-		entriesMap["Μισθωτής"],
-		layout.NewSpacer(),
-		coordsLabel,
-	)
-	for i := range 4 {
-		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		leftContainer.Add(coordContainer)
-	}
+	if fyne.CurrentDevice().IsMobile() {
+		// --Mobile layout--
 
-	rightContainer := container.NewVBox(
-		entriesMap["Στρέμματα"],
-		entriesMap["Είδος Καλ/γειας"],
-		entriesMap["Μίσθωμα"],
-		layout.NewSpacer(),
-		durationLabel,
-		startDateInput,
-		endDateInput,
-	)
-
-	content := container.NewGridWithColumns(2, leftContainer, rightContainer)
-	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
-
-	body := container.NewVBox(
-		content,
-		layout.NewSpacer(),
-		buttons,
-	)
-
-	allInputs := []fyne.CanvasObject{
-		entriesMap["Εκμισθωτής"],
-		entriesMap["Μισθωτής"],
-		entriesMap["Στρέμματα"],
-		entriesMap["Είδος Καλ/γειας"],
-		entriesMap["Μίσθωμα"],
-		entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
-		entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
-		entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
-		entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
-	}
-
-	// Unfocuses to prevent tapping every single entry field when draging
-	// body.OnScrolled = func(p fyne.Position) {
-	// 	appState.window.Canvas().Unfocus()
-	// }
-	// TODO: Figure out an easy way to be able to scroll when you tap and drag
-	// on an entry field.
-
-	focusChain(allInputs, appState, body)
-
-	log.Printf("mobileForm created successfully.")
-
-	return body, nil
-}
-
-func desktopForm(appState *AppState) (fyne.CanvasObject, error) {
-	log.Printf("Creating desktopForm...")
-
-	entriesMap := make(map[string]*widget.Entry)
-
-	coordsLabel := widget.NewLabel("Γεωγραφικές Συντεταγμένες")
-	durationLabel := widget.NewLabel("Διαρκεια")
-
-	labelsEntries := []string{
-		"Εκμισθωτής",
-		"Μισθωτής",
-		"Στρέμματα",
-		"Είδος Καλ/γειας",
-		"Μίσθωμα",
-	}
-
-	for _, l := range labelsEntries {
-		tmpEnt := newEntryWithLabel(l)
-		entriesMap[l] = tmpEnt
-	}
-
-	for i := range 4 {
-		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
-		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
-		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
-		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
-	}
-
-	// Starting date input and it's button that opens a calendar for easier date choosing
-	start_input := widget.NewEntry()
-	start_input.SetPlaceHolder("ΑΠΟ")
-	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(start_input, appState.window)
-	})
-	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
-
-	// Same as starting date but for the ending date
-	end_input := widget.NewEntry()
-	end_input.SetPlaceHolder("ΕΩΣ")
-	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(end_input, appState.window)
-	})
-	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
-
-	// Save button
-	saveBtn := widget.NewButton("Αποθήκευση", func() {
-		// Convert to float64 and gather the coordinates
-		coords := make([]Coordinate, 0, 4)
+		leftContainer := container.NewVBox(
+			entriesMap["Όνομα Εγγραφής"],
+			entriesMap["Εκμισθωτής"],
+			entriesMap["Μισθωτής"],
+			layout.NewSpacer(),
+			coordsLabel,
+		)
 		for i := range 4 {
-			latValue, errLat := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Πλάτος %d", i+1)].Text, 5)
-			longValue, errLon := ParseFloatToXDecimals(entriesMap[fmt.Sprintf("Μήκος %d", i+1)].Text, 5)
-
-			if errLat != nil || errLon != nil {
-				log.Printf("Error parsing coordinates")
-				dialog.ShowError(errLat, appState.window)
-			}
-
-			coords = append(coords, Coordinate{Latitude: latValue, Longitude: longValue})
-		}
-		// and the size
-		// size, err := strconv.ParseFloat(acres.Text, 64)
-		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
-		if err != nil {
-			log.Printf("Error parsing the size of the land")
-			dialog.ShowError(err, appState.window)
+			coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+			leftContainer.Add(coordContainer)
 		}
 
-		money, err := strconv.ParseFloat(entriesMap["Μίσθωμα"].Text, 32)
-		if err != nil {
-			log.Printf("Error parsing the rent price")
-			dialog.ShowError(err, appState.window)
+		rightContainer := container.NewVBox(
+			entriesMap["Στρέμματα"],
+			entriesMap["Είδος Καλ/γειας"],
+			entriesMap["Μίσθωμα"],
+			layout.NewSpacer(),
+			durationLabel,
+			startDateInput,
+			endDateInput,
+		)
+
+		content := container.NewGridWithColumns(2, leftContainer, rightContainer)
+		buttons := container.NewGridWithColumns(2, backButton, saveBtn)
+
+		body := container.NewVBox(
+			content,
+			layout.NewSpacer(),
+			buttons,
+		)
+
+		allInputs := []fyne.CanvasObject{
+			entriesMap["Όνομα Εγγραφής"],
+			entriesMap["Εκμισθωτής"],
+			entriesMap["Μισθωτής"],
+			entriesMap["Στρέμματα"],
+			entriesMap["Είδος Καλ/γειας"],
+			entriesMap["Μίσθωμα"],
+			entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
+			entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
+			entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
+			entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
 		}
-		money = TruncateFloatTo2Decimals(money)
 
-		// We build the new entry here
-		newEntry := Entry{
-			LandlordName: entriesMap["Εκμισθωτής"].Text,
-			RenterName:   entriesMap["Μισθωτής"].Text,
-			Coords:       coords,
-			Timestamp:    time.Now(),
-			Size:         size,
-			Type:         entriesMap["Είδος Καλ/γειας"].Text,
-			Start:        start_input.Text,
-			End:          end_input.Text,
-			Rent:         money,
+		// Unfocuses to prevent tapping every single entry field when draging
+		// body.OnScrolled = func(p fyne.Position) {
+		// 	appState.window.Canvas().Unfocus()
+		// }
+		// TODO: Figure out an easy way to be able to scroll when you tap and drag
+		// on an entry field.
+
+		focusChain(allInputs, appState, body)
+
+		log.Printf("mobileForm created successfully.")
+
+		return body, nil
+
+	} else {
+		// --Desktop layout--
+
+		// LEFT
+		left_container := container.NewVBox(
+			entriesMap["Όνομα Εγγραφής"],
+			entriesMap["Εκμισθωτής"],
+			entriesMap["Μισθωτής"],
+			layout.NewSpacer(),
+			coordsLabel,
+		)
+		for i := range 4 {
+			coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+			left_container.Add(coordContainer)
 		}
 
-		err = saveEntry(appState.db, newEntry)
-		if err != nil {
-			log.Printf("Error saving entry: %v", err)
-			dialog.ShowError(err, appState.window)
-			return
-		}
+		// RIGHT
+		right_container := container.NewVBox(
+			entriesMap["Στρέμματα"],
+			entriesMap["Είδος Καλ/γειας"],
+			entriesMap["Μίσθωμα"],
+			layout.NewSpacer(),
+			durationLabel,
+			startDateInput,
+			endDateInput,
+		)
 
-		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
-		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
-	})
+		// Putting both left and right containters on a grid
+		content := container.NewGridWithColumns(2, left_container, right_container)
+		buttons := container.NewGridWithColumns(2, backButton, saveBtn)
 
-	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := mainView(appState)
-		if err != nil {
-			log.Printf("error constructing list layout: %v", err)
-		}
-		body := container.NewBorder(nil, nil, nil, nil, tmp)
-		appState.window.SetContent(body)
-	})
+		// Finally add everything into a VBox and call it a day
+		body := container.NewVBox(
+			content,
+			layout.NewSpacer(),
+			buttons,
+		)
 
-	// LEFT
-	left_container := container.NewVBox(
-		entriesMap["Εκμισθωτής"],
-		entriesMap["Μισθωτής"],
-		layout.NewSpacer(),
-		coordsLabel,
-	)
-	for i := range 4 {
-		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		left_container.Add(coordContainer)
+		log.Printf("desktopForm created successfully.")
+		
+		return body, nil
 	}
-
-	// RIGHT
-	right_container := container.NewVBox(
-		entriesMap["Στρέμματα"],
-		entriesMap["Είδος Καλ/γειας"],
-		entriesMap["Μίσθωμα"],
-		layout.NewSpacer(),
-		durationLabel,
-		startDateInput,
-		endDateInput,
-	)
-
-	// Putting both left and right containters on a grid
-	content := container.NewGridWithColumns(2, left_container, right_container)
-	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
-
-	// Finally add everything into a VBox and call it a day
-	body := container.NewVBox(
-		content,
-		layout.NewSpacer(),
-		buttons,
-	)
-
-	log.Printf("desktopForm created successfully.")
-
-	return body, nil
 }
 
-func desktopEditForm(appState *AppState, id int) (fyne.CanvasObject, error) {
+func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	log.Printf("Creating desktop edit form...")
 
 	entriesMap := make(map[string]*widget.Entry)
@@ -526,7 +439,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
 				return
 			}
-			label.SetText(fmt.Sprintf("%d: %s -> %s", entry.ID, entry.LandlordName, entry.RenterName))
+			label.SetText(fmt.Sprintf("%d: %s", entry.ID, entry.NickName))
 		},
 	)
 
@@ -543,7 +456,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			tmp, err := mobileForm(appState)
+			tmp, err := AddForm(appState)
 			if err != nil {
 				log.Printf("error constructing mobile layout: %v", err)
 			}
@@ -551,7 +464,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			tmp, err := desktopForm(appState)
+			tmp, err := AddForm(appState)
 			if err != nil {
 				log.Printf("error constructing desktop layout: %v", err)
 			}
@@ -668,7 +581,7 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 	}
 
 	editButton.OnTapped = func() {
-		editForm, err := desktopEditForm(appState, entry.ID)
+		editForm, err := editForm(appState, entry.ID)
 		if err != nil {
 			log.Printf("error creating desktopEditForm for %d: %v", entry.ID, err)
 		}
