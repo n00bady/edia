@@ -121,7 +121,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 
 		// return to mainView
-		mainview, err := mainView(appState)
+		mainview, err := listView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 			dialog.ShowError(err, appState.window)
@@ -131,7 +131,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Cancel button to go back
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := mainView(appState)
+		tmp, err := listView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -363,7 +363,7 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	})
 
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := mainView(appState)
+		tmp, err := listView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -409,6 +409,26 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
+	listViewButton := widget.NewButton("Χωράφια", func() {
+		lView, err := listView(appState)
+		if err != nil {
+			log.Printf("error constructing listView: %v", err)
+			dialog.ShowError(err, appState.window)
+		}
+
+		appState.window.SetContent(lView)
+	})
+
+	landLordButton := widget.NewButton("Ιδιοκτήτες", func(){})
+
+	renterButton := widget.NewButton("Μισθωτές", func() {})
+
+	body := container.New(layout.NewCenterLayout(), container.NewVBox(listViewButton, landLordButton, renterButton))
+
+	return body, nil
+}
+
+func listView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the mainView...")
 	entries, err := getAll(appState.db)
 	if err != nil {
