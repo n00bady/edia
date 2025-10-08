@@ -67,6 +67,11 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	})
 	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
+	// Button to add multiple landlords
+	addMoreLandlords := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+		addLandLords(appState)
+	})
+
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
@@ -99,7 +104,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		// We build the new entry here
 		newEntry := Entry{
 			NickName:     entriesMap["Όνομα Εγγραφής"].Text,
-			LandlordName: entriesMap["Εκμισθωτής"].Text,
+			LandlordName: []string{entriesMap["Εκμισθωτής"].Text}, // placeholder
 			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
@@ -142,9 +147,11 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
 
+		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, entriesMap["Εκμισθωτής"])
+
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
-			entriesMap["Εκμισθωτής"],
+			landlordsContainer,
 			entriesMap["Μισθωτής"],
 			layout.NewSpacer(),
 			coordsLabel,
@@ -202,10 +209,11 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	} else {
 		// --Desktop layout--
 
+		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, entriesMap["Εκμισθωτής"])
 		// LEFT
 		left_container := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
-			entriesMap["Εκμισθωτής"],
+			landlordsContainer,
 			entriesMap["Μισθωτής"],
 			layout.NewSpacer(),
 			coordsLabel,
@@ -270,7 +278,7 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	}
 
 	// Assign values to entries from the selected Entry
-	entriesMap["Εκμισθωτής"].SetText(selectedEntry.LandlordName)
+	entriesMap["Εκμισθωτής"].SetText(selectedEntry.LandlordName[0])
 	entriesMap["Μισθωτής"].SetText(selectedEntry.RenterName)
 	entriesMap["Στρέμματα"].SetText(strconv.FormatFloat(selectedEntry.Size, 'f', -1, 64))
 	entriesMap["Είδος Καλ/γειας"].SetText(selectedEntry.Type)
@@ -340,7 +348,6 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		// We build the new entry here
 		editedEntry := Entry{
 			ID:           id,
-			LandlordName: entriesMap["Εκμισθωτής"].Text,
 			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
@@ -350,6 +357,7 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 			End:          end_input.Text,
 			Rent:         money,
 		}
+		editedEntry.LandlordName = append(editedEntry.LandlordName, entriesMap["Εκμισθωτής"].Text)
 
 		err = updateEntry(appState.db, editedEntry)
 		if err != nil {
@@ -419,7 +427,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(lView)
 	})
 
-	landLordButton := widget.NewButton("Ιδιοκτήτες", func(){})
+	landLordButton := widget.NewButton("Ιδιοκτήτες", func() {})
 
 	renterButton := widget.NewButton("Μισθωτές", func() {})
 
@@ -473,12 +481,21 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 	}
 
 	var addButton fyne.CanvasObject
+	var backButton fyne.CanvasObject
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 			tmp, err := AddForm(appState)
 			if err != nil {
 				log.Printf("error constructing mobile layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+
+		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
+			tmp, err := mainView(appState)
+			if err != nil {
+				log.Printf("error constructing main layout: %v", err)
 			}
 			appState.window.SetContent(tmp)
 		})
@@ -490,8 +507,17 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 			}
 			appState.window.SetContent(tmp)
 		})
+
+		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
+			tmp, err := mainView(appState)
+			if err != nil {
+				log.Printf("error constructing main layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
 	}
 	addButton.Resize(fyne.NewSize(200, 200))
+	backButton.Resize(fyne.NewSize(200, 200))
 
 	body := container.New(
 		layout.NewBorderLayout(nil, nil, nil, nil),
@@ -502,6 +528,7 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 			container.New(
 				layout.NewHBoxLayout(),
 				layout.NewSpacer(),
+				container.NewPadded(backButton),
 				container.NewPadded(addButton),
 			),
 		),
@@ -550,6 +577,28 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 			}
 		}
 	}
+}
+
+func addLandLords(appState *AppState) []string {
+	var landLords []string
+	landLordName := widget.NewEntry()
+	closeButton := widget.NewButton("Close", nil)
+	saveButton := widget.NewButton("Save", nil)
+	addOne := widget.NewButtonWithIcon("", theme.ContentAddIcon(), nil)
+
+	btnsContainer := container.NewHBox(closeButton, saveButton, addOne)
+
+	content := container.NewVBox(landLordName, layout.NewSpacer(), btnsContainer)
+
+	addpopup := widget.NewModalPopUp(content, appState.window.Canvas())
+
+	closeButton.OnTapped = func() {
+		addpopup.Hide()
+	}
+
+	addpopup.Show()
+
+	return landLords
 }
 
 // Details popup for the list

@@ -33,7 +33,7 @@ type Entry struct {
 	NickName     string
 	Timestamp    time.Time
 	RenterName   string
-	LandlordName string
+	LandlordName []string
 	Coords       []Coordinate
 	Size         float64
 	Type         string

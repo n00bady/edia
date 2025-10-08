@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -73,9 +74,10 @@ func saveEntry(db *sql.DB, entry Entry) error {
         INSERT INTO entries (NickName, Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
+	landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
 
 	log.Printf("Saving new entry in the database...")
-	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, landlordNamesJSON, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return fmt.Errorf("error inserting entry: %v", err)
 	}
@@ -183,11 +185,17 @@ func getAll(db *sql.DB) ([]Entry, error) {
 	}
 
 	var entries []Entry
+	var landlordNamesJSON []byte
 	for result.Next() {
 		var entry Entry
-		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &landlordNamesJSON, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving entries from database: %v", err)
+		}
+		err = json.Unmarshal(landlordNamesJSON, &entry.LandlordName)
+		if err != nil {
+			log.Printf("error Unmarshaling landlordNamesJSON")
+			return nil, err
 		}
 		entries = append(entries, entry)
 	}
