@@ -30,6 +30,9 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
+	var landLords []string
+	landLordsEntries := make([]*widget.Entry, 1)
+
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
 		"Εκμισθωτής",
@@ -51,6 +54,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
 	}
 
+	// Multiple land lord entries
+	landLordsEntries[0] = entriesMap["Εκμισθωτής"]
+	entriesMap["Εκμισθωτής"].PlaceHolder = "Click + to add more..."
+
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
@@ -68,9 +75,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
 	// Button to add multiple landlords
-	addMoreLandlords := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		addLandLords(appState)
-	})
+	addMoreLandlords := widget.NewButtonWithIcon("", theme.ContentAddIcon(), nil)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -101,10 +106,17 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 		money = TruncateFloatTo2Decimals(money)
 
+		for _, e := range landLordsEntries {
+			if e.Text != "" {
+				landLords = append(landLords, e.Text)
+			}
+		}
+		log.Println("landlords: ", landLords)
+
 		// We build the new entry here
 		newEntry := Entry{
 			NickName:     entriesMap["Όνομα Εγγραφής"].Text,
-			LandlordName: []string{entriesMap["Εκμισθωτής"].Text}, // placeholder
+			LandlordName: landLords,
 			RenterName:   entriesMap["Μισθωτής"].Text,
 			Coords:       coords,
 			Timestamp:    time.Now(),
@@ -144,10 +156,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
+	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-
-		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, entriesMap["Εκμισθωτής"])
+		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, landLordsEntries[0])
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -180,6 +192,14 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			buttons,
 		)
 
+		addMoreLandlords.OnTapped = func() {
+			newEntry := widget.NewEntry()
+			landLordsEntries = append(landLordsEntries, newEntry)
+			landlordsContainer.Add(newEntry)
+			content.Refresh()
+			log.Println("LandLord Entries: ", landLordsEntries)
+		}
+
 		allInputs := []fyne.CanvasObject{
 			entriesMap["Όνομα Εγγραφής"],
 			entriesMap["Εκμισθωτής"],
@@ -208,8 +228,9 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	} else {
 		// --Desktop layout--
+		landLordEntriesContainer := container.NewVBox(landLordsEntries[0])
+		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, landLordEntriesContainer)
 
-		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, entriesMap["Εκμισθωτής"])
 		// LEFT
 		left_container := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -244,6 +265,13 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			layout.NewSpacer(),
 			buttons,
 		)
+
+		addMoreLandlords.OnTapped = func() {
+			newEntry := widget.NewEntry()
+			landLordsEntries = append(landLordsEntries, newEntry)
+			landLordEntriesContainer.Add(newEntry)
+			body.Refresh()
+		}
 
 		log.Printf("desktopForm created successfully.")
 		
@@ -577,28 +605,6 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 			}
 		}
 	}
-}
-
-func addLandLords(appState *AppState) []string {
-	var landLords []string
-	landLordName := widget.NewEntry()
-	closeButton := widget.NewButton("Close", nil)
-	saveButton := widget.NewButton("Save", nil)
-	addOne := widget.NewButtonWithIcon("", theme.ContentAddIcon(), nil)
-
-	btnsContainer := container.NewHBox(closeButton, saveButton, addOne)
-
-	content := container.NewVBox(landLordName, layout.NewSpacer(), btnsContainer)
-
-	addpopup := widget.NewModalPopUp(content, appState.window.Canvas())
-
-	closeButton.OnTapped = func() {
-		addpopup.Hide()
-	}
-
-	addpopup.Show()
-
-	return landLords
 }
 
 // Details popup for the list
