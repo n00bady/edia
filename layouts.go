@@ -27,7 +27,7 @@ func newEntryWithLabel(ph string) *widget.Entry {
 func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
-	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
+	// coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	var landLords []string
@@ -76,6 +76,11 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Button to add multiple landlords
 	addMoreLandlords := widget.NewButtonWithIcon("", theme.ContentAddIcon(), nil)
+
+	// Button to add Geo Coordinates
+	addGeoLocButton := widget.NewButtonWithIcon("Add GeoCoordinates", theme.ContentAddIcon(), func() {
+		showGeoLocForm(appState, entriesMap)
+	})
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -166,12 +171,12 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			landlordsContainer,
 			entriesMap["Μισθωτής"],
 			layout.NewSpacer(),
-			coordsLabel,
+			addGeoLocButton,
 		)
-		for i := range 4 {
-			coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-			leftContainer.Add(coordContainer)
-		}
+		// for i := range 4 {
+		// 	coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		// 	leftContainer.Add(coordContainer)
+		// }
 
 		rightContainer := container.NewVBox(
 			entriesMap["Στρέμματα"],
@@ -237,12 +242,12 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			landlordsContainer,
 			entriesMap["Μισθωτής"],
 			layout.NewSpacer(),
-			coordsLabel,
+			addGeoLocButton,
 		)
-		for i := range 4 {
-			coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-			left_container.Add(coordContainer)
-		}
+		// for i := range 4 {
+		// 	coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		// 	left_container.Add(coordContainer)
+		// }
 
 		// RIGHT
 		right_container := container.NewVBox(
@@ -274,11 +279,12 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 
 		log.Printf("desktopForm created successfully.")
-		
+
 		return body, nil
 	}
 }
 
+// TODO: Bring it inline with the changes in the Structs and AddForm
 func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	log.Printf("Creating desktop edit form...")
 
@@ -375,15 +381,15 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		editedEntry := Entry{
-			ID:           id,
-			RenterName:   entriesMap["Μισθωτής"].Text,
-			Coords:       coords,
-			Timestamp:    time.Now(),
-			Size:         size,
-			Type:         entriesMap["Είδος Καλ/γειας"].Text,
-			Start:        start_input.Text,
-			End:          end_input.Text,
-			Rent:         money,
+			ID:         id,
+			RenterName: entriesMap["Μισθωτής"].Text,
+			Coords:     coords,
+			Timestamp:  time.Now(),
+			Size:       size,
+			Type:       entriesMap["Είδος Καλ/γειας"].Text,
+			Start:      start_input.Text,
+			End:        end_input.Text,
+			Rent:       money,
 		}
 		editedEntry.LandlordName = append(editedEntry.LandlordName, entriesMap["Εκμισθωτής"].Text)
 
@@ -607,6 +613,7 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 	}
 }
 
+// TODO: Bring that inline with the changes in the Structs and AddForm
 // Details popup for the list
 func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry) {
 	log.Printf("Showing popup for: %d", entry.ID)
@@ -690,6 +697,26 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 
 	popup.Show()
 	fmt.Printf("Popup displayed for: %d", entry.ID)
+}
+
+func showGeoLocForm(appState *AppState, entriesMap map[string]*widget.Entry) {
+	content := container.NewVBox()
+	closeButton := widget.NewButton("close", nil)
+	for i := range 4 {
+		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+		content.Add(coordContainer)
+		content.Add(layout.NewSpacer())
+	}
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+	closeButton.OnTapped = func() {
+		popup.Hide()
+	}
+	content.Add(closeButton)
+
+	popup.Resize(fyne.NewSize(300, 300))
+
+	popup.Show()
 }
 
 // Show Calendar for easy date picking
