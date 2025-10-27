@@ -139,7 +139,8 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	updateSQLCoords := `
 		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
 
-	res, err := tx.Exec(updateSQL, entry.LandlordName, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+	landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
+	res, err := tx.Exec(updateSQL, landlordNamesJSON, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
 	if err != nil {
 		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
 	}
@@ -213,15 +214,21 @@ func getEntry(db *sql.DB, id int) (*Entry, error) {
 		Select latitude, longitude From coordinates Where entry_id = ?
 	`
 	var entry Entry
+	var landlordNamesJSON []byte
 
 	log.Printf("Quering the database for entry with id: %d", id)
 	result := db.QueryRow(selectSQL, id)
-	err := result.Scan(&entry.ID, &entry.Timestamp, &entry.LandlordName, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+	err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &landlordNamesJSON, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving entry with id: %d: %v", id, err)
+	}
+	err = json.Unmarshal(landlordNamesJSON, &entry.LandlordName)
+	if err != nil {
+		log.Printf("error Unmashaling landlordNamesJSON")
+		return nil, err
 	}
 
 	resultCoords, err := db.Query(selectSQLForCoords, id)
