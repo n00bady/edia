@@ -25,6 +25,18 @@ type Coordinate struct {
 	Longitude float64
 }
 
+// Εκμισθωτές
+type LandlordDetails struct {
+	FirstName   string
+	LastName    string
+	FathersName string
+	AFM         int
+	ADT         string
+	ATA         int
+	E9          []byte
+	Notes       string
+}
+
 // An entry is a placeholder for the actual structure that
 // will hold all the data about each Rent and Contracts for
 // farm land
@@ -33,7 +45,7 @@ type Entry struct {
 	NickName     string
 	Timestamp    time.Time
 	RenterName   string
-	LandlordName []string
+	LandlordName []LandlordDetails
 	Coords       []Coordinate
 	Size         float64
 	Type         string

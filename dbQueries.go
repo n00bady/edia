@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -31,7 +30,6 @@ func initDB(dbPath string) (*sql.DB, error) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 			NickName TEXT NOT NUll,
 			Timestamp DATETIME NOT NULL,
-			LandLord TEXT NOT NULL,
 			Renter TEXT NOT NULL,
 			Size REAL NOT NULL,
 			Type TEXT NOT NULL,
@@ -63,6 +61,27 @@ func initDB(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error creating coordinates table: %v", err)
 	}
 
+	createLandLordDetails := `
+		CREATE TABLE IF NOT EXISTS landlordDetails (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			entry_id INTEGER NOT NULL,
+			firstName TEXT NOT NULL,
+			lastName TEXT NOT NULL,
+			fathersName TEXT,
+			afm INTEGER,
+			adt TEXT,
+			ata INTEGER,
+			e9 BLOB,
+			notes TEXT
+		);
+	`
+
+	log.Printf("Creating table LandLordDetails...")
+	_, err = db.Exec(createLandLordDetails)
+	if err != nil {
+		return nil, fmt.Errorf("error creating landlordDetails table: %v", err)
+	}
+
 	log.Printf("Tables created successfully!")
 
 	return db, nil
@@ -71,13 +90,11 @@ func initDB(dbPath string) (*sql.DB, error) {
 // Save an entry
 func saveEntry(db *sql.DB, entry Entry) error {
 	insertSQL := `
-        INSERT INTO entries (NickName, Timestamp, LandLord, Renter, Size, Type, Rent, Start, End) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO entries (NickName, Timestamp, Renter, Size, Type, Rent, Start, End) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
-
 	log.Printf("Saving new entry in the database...")
-	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, landlordNamesJSON, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return fmt.Errorf("error inserting entry: %v", err)
 	}
@@ -96,6 +113,19 @@ func saveEntry(db *sql.DB, entry Entry) error {
 		if err != nil {
 			return fmt.Errorf("error inserting entry coordinate: %v", err)
 		}
+	}
+
+	log.Printf("Saving the landlordDetails...")
+	insertLandLordDetails := `
+		INSERT INTO landlordDetails (entry_id, firstName, lastName, fathersName, afm, adt, ata, e9, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	for _, e := range entry.LandlordName {
+		_, err := db.Exec(insertLandLordDetails, entry.ID, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes)
+		if err != nil {
+			return fmt.Errorf("error inserting land lord details: %v", err)
+		}
+		log.Printf("Inserting into landlordDetails: %s, %s", e.FirstName, e.LastName)
 	}
 
 	log.Printf("Saved entry successfully!")
@@ -138,11 +168,13 @@ func updateEntry(db *sql.DB, entry Entry) error {
 		UPDATE entries SET LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
 	updateSQLCoords := `
 		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
+	updateLandLords := `
+		UPDATE landlordDetails SET firstName = ?, lastName = ? fathersName = ?, afm = ?, adt = ?, ata = ?, e9 = ?, notes = ? WHEREE entry_id = ? AND id = ?`
 
-	landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
-	res, err := tx.Exec(updateSQL, landlordNamesJSON, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+	// landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
+	res, err := tx.Exec(updateSQL, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
 	if err != nil {
-		return fmt.Errorf("error updating entry with id: %d: %v", entry.ID, err)
+		return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
 	}
 	rowsAff, RowErr := res.RowsAffected()
 	log.Printf("Rows Affected: %d", rowsAff)
@@ -163,10 +195,20 @@ func updateEntry(db *sql.DB, entry Entry) error {
 		}
 	}
 
+	for _, e := range entry.LandlordName {
+		res, err = tx.Exec(updateLandLords, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes)
+		if err != nil {
+			return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
+		}
+		rowsAff, rowsErr := res.RowsAffected()
+		log.Printf("Rows Affected: %d", rowsAff)
+		log.Printf("Result error: %s", rowsErr)
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("error commiting transaction: %v", err)
+		return fmt.Errorf("error commiting transaction to the database: %v", err)
 	}
 
 	log.Printf("Updated entry %d successfully!", entry.ID)
@@ -186,18 +228,32 @@ func getAll(db *sql.DB) ([]Entry, error) {
 	}
 
 	var entries []Entry
-	var landlordNamesJSON []byte
+
 	for result.Next() {
 		var entry Entry
-		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &landlordNamesJSON, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving entries from database: %v", err)
 		}
-		err = json.Unmarshal(landlordNamesJSON, &entry.LandlordName)
+
+		selectLandLords := `SELECT firstName, lastName, fathersName, afm, adt, ata, e9, notes FROM landlordDetails WHERE entry_id = ?`
+
+		var landlords []LandlordDetails
+		res, err := db.Query(selectLandLords, entry.ID)
 		if err != nil {
-			log.Printf("error Unmarshaling landlordNamesJSON")
-			return nil, err
+			return nil, fmt.Errorf("error quering the land lords database: %v", err)
 		}
+		for res.Next() {
+			var landlord LandlordDetails
+			err := res.Scan(&landlord.FirstName, &landlord.LastName, &landlord.FathersName, &landlord.AFM, &landlord.ADT, &landlord.ATA, &landlord.E9, &landlord.Notes)
+			if err != nil {
+				return nil, fmt.Errorf("error retrieving land lords details for entry %d: %v", entry.ID, err)
+			}
+
+			landlords = append(landlords, landlord)
+		}
+		entry.LandlordName = landlords
+
 		entries = append(entries, entry)
 	}
 	log.Printf("Retrieved the results successfully!")
@@ -208,27 +264,37 @@ func getAll(db *sql.DB) ([]Entry, error) {
 
 func getEntry(db *sql.DB, id int) (*Entry, error) {
 	selectSQL := `
-		Select * From entries Where ID = ?
+		SELECT * FROM entries WHERE ID = ?
 	`
 	selectSQLForCoords := `
-		Select latitude, longitude From coordinates Where entry_id = ?
+		SELECT latitude, longitude FROM coordinates WHERE entry_id = ?
 	`
+	selectSQLForLandLords := `
+		SELECT firstName, lastName, fathersName, afm, adt, ata, e9, notes FROM landlordDetails WHERE entry_id = ?
+	`
+
 	var entry Entry
-	var landlordNamesJSON []byte
 
 	log.Printf("Quering the database for entry with id: %d", id)
 	result := db.QueryRow(selectSQL, id)
-	err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &landlordNamesJSON, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
+	err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
 	if err == sql.ErrNoRows {
 		return nil, err
-	}
-	if err != nil {
+	} else if err != nil {
 		return nil, fmt.Errorf("error retrieving entry with id: %d: %v", id, err)
 	}
-	err = json.Unmarshal(landlordNamesJSON, &entry.LandlordName)
+
+	resultLandLords, err := db.Query(selectSQLForLandLords, id)
 	if err != nil {
-		log.Printf("error Unmashaling landlordNamesJSON")
 		return nil, err
+	}
+	for resultLandLords.Next() {
+		var landlord LandlordDetails
+		err := resultLandLords.Scan(&landlord.FirstName, &landlord.LastName, &landlord.FathersName, &landlord.AFM, &landlord.ADT, &landlord.ATA, &landlord.E9, &landlord.Notes)
+		if err != nil {
+			return nil, err
+		}
+		entry.LandlordName = append(entry.LandlordName, landlord)
 	}
 
 	resultCoords, err := db.Query(selectSQLForCoords, id)
@@ -254,12 +320,23 @@ func delEntry(db *sql.DB, id int) error {
 	delEntrySQL2 := `
 		Delete From entries Where id = ?
 	`
+
+	delLandLords := `
+		DELETE FROM landlordDetails WHERE id = ?
+	`
+
 	log.Printf("Deleting entry %d and it's coordinates", id)
 
 	log.Printf("Deleting coordinates for entry: %d", id)
 	_, err := db.Exec(delCoordsSQL, id)
 	if err != nil {
 		return fmt.Errorf("could not delete coordinates for entry %d", id)
+	}
+
+	log.Printf("Deleting landlord details for entry: %d", id)
+	_, err = db.Exec(delLandLords, id)
+	if err != nil {
+		return fmt.Errorf("could not delete landlord details for entry %d", id)
 	}
 
 	log.Printf("Deleting entry %d from entries.", id)
@@ -286,6 +363,11 @@ func resetAutoIncrement(db *sql.DB) error {
 	}
 
 	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM coordinates) WHERE name = 'coordinates'")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM landlordDetails) WHERE name = 'landlordDetails'")
 	if err != nil {
 		return err
 	}

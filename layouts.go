@@ -27,11 +27,10 @@ func newEntryWithLabel(ph string) *widget.Entry {
 func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
-	// coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
 
-	var landLords []string
-	landLordsEntries := make([]*widget.Entry, 1)
+	var landLords []LandlordDetails
+	landLordsLabels := make([]*widget.Label, 0)
 
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
@@ -54,10 +53,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
 	}
 
-	// Multiple land lord entries
-	landLordsEntries[0] = entriesMap["Εκμισθωτής"]
-	entriesMap["Εκμισθωτής"].PlaceHolder = "Click + to add more..."
-
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
@@ -75,7 +70,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
 
 	// Button to add multiple landlords
-	addMoreLandlords := widget.NewButtonWithIcon("", theme.ContentAddIcon(), nil)
+	landLordsLabelsContainer := container.NewVBox()
+	addLandLord := widget.NewButtonWithIcon("Add Landlord", theme.ContentAddIcon(), func() {
+		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer)
+	})
 
 	// Button to add Geo Coordinates
 	addGeoLocButton := widget.NewButtonWithIcon("Add GeoCoordinates", theme.ContentAddIcon(), func() {
@@ -111,12 +109,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 		money = TruncateFloatTo2Decimals(money)
 
-		for _, e := range landLordsEntries {
-			if e.Text != "" {
-				landLords = append(landLords, e.Text)
-			}
+		log.Printf("--- landlords: %v", landLords)
+		for _, l := range landLords {
+			log.Printf("--- landlord: %s, %s\n", l.FirstName, l.LastName)
 		}
-		log.Println("landlords: ", landLords)
 
 		// We build the new entry here
 		newEntry := Entry{
@@ -139,7 +135,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			return
 		}
 
-		log.Printf("Saved entry: %s\n%s\n%f\netc...\n", newEntry.LandlordName, newEntry.RenterName, newEntry.Rent)
+		log.Printf("Saved entry: 1stLandlord: %s\nRenter: %s\nRent: %f\n...\n", newEntry.LandlordName[0].LastName, newEntry.RenterName, newEntry.Rent)
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 
 		// return to mainView
@@ -164,7 +160,11 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, landLordsEntries[0])
+		landLordsLabelsContainer := container.NewVBox()
+		for _, l := range landLords {
+			landLordsLabelsContainer.Add(widget.NewLabel(l.FirstName + " " + l.LastName))
+		}
+		landlordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabels[0])
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -173,10 +173,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			layout.NewSpacer(),
 			addGeoLocButton,
 		)
-		// for i := range 4 {
-		// 	coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		// 	leftContainer.Add(coordContainer)
-		// }
 
 		rightContainer := container.NewVBox(
 			entriesMap["Στρέμματα"],
@@ -196,14 +192,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			layout.NewSpacer(),
 			buttons,
 		)
-
-		addMoreLandlords.OnTapped = func() {
-			newEntry := widget.NewEntry()
-			landLordsEntries = append(landLordsEntries, newEntry)
-			landlordsContainer.Add(newEntry)
-			content.Refresh()
-			log.Println("LandLord Entries: ", landLordsEntries)
-		}
 
 		allInputs := []fyne.CanvasObject{
 			entriesMap["Όνομα Εγγραφής"],
@@ -233,8 +221,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	} else {
 		// --Desktop layout--
-		landLordEntriesContainer := container.NewVBox(landLordsEntries[0])
-		landlordsContainer := container.NewBorder(nil, nil, nil, addMoreLandlords, landLordEntriesContainer)
+		landlordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabelsContainer)
 
 		// LEFT
 		left_container := container.NewVBox(
@@ -244,10 +231,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			layout.NewSpacer(),
 			addGeoLocButton,
 		)
-		// for i := range 4 {
-		// 	coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		// 	left_container.Add(coordContainer)
-		// }
 
 		// RIGHT
 		right_container := container.NewVBox(
@@ -271,20 +254,12 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			buttons,
 		)
 
-		addMoreLandlords.OnTapped = func() {
-			newEntry := widget.NewEntry()
-			landLordsEntries = append(landLordsEntries, newEntry)
-			landLordEntriesContainer.Add(newEntry)
-			body.Refresh()
-		}
-
 		log.Printf("desktopForm created successfully.")
 
 		return body, nil
 	}
 }
 
-// TODO: Bring it inline with the changes in the Structs and AddForm
 func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	log.Printf("Creating desktop edit form...")
 
@@ -295,8 +270,14 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	coordsLabel := widget.NewLabel("ΓεωΣυντεταγμένες")
 	durationLabel := widget.NewLabel("Διαρκεια")
+
+	var landLords []LandlordDetails
+
+	for _, n := range selectedEntry.LandlordName {
+		landLords = append(landLords, n)
+		log.Printf("appending LandlordName: ", n)
+	}
 
 	labelsEntries := []string{
 		"Εκμισθωτής",
@@ -312,7 +293,7 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 	}
 
 	// Assign values to entries from the selected Entry
-	entriesMap["Εκμισθωτής"].SetText(selectedEntry.LandlordName[0])
+	// entriesMap["Εκμισθωτής"].SetText(selectedEntry.LandlordName[0])
 	entriesMap["Μισθωτής"].SetText(selectedEntry.RenterName)
 	entriesMap["Στρέμματα"].SetText(strconv.FormatFloat(selectedEntry.Size, 'f', -1, 64))
 	entriesMap["Είδος Καλ/γειας"].SetText(selectedEntry.Type)
@@ -345,6 +326,15 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		showCalendar(end_input, appState.window)
 	})
 	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
+
+	landLordsLabelsContainer := container.NewVBox()
+	addLandLord := widget.NewButtonWithIcon("Add Landlord", theme.ContentAddIcon(), func() {
+		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer)
+	})
+
+	addGeoLocButton := widget.NewButtonWithIcon("Add GeoCoordinates", theme.ContentAddIcon(), func() {
+		showGeoLocForm(appState, entriesMap)
+	})
 
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
@@ -381,17 +371,18 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 
 		// We build the new entry here
 		editedEntry := Entry{
-			ID:         id,
-			RenterName: entriesMap["Μισθωτής"].Text,
-			Coords:     coords,
-			Timestamp:  time.Now(),
-			Size:       size,
-			Type:       entriesMap["Είδος Καλ/γειας"].Text,
-			Start:      start_input.Text,
-			End:        end_input.Text,
-			Rent:       money,
+			ID:           id,
+			LandlordName: landLords,
+			RenterName:   entriesMap["Μισθωτής"].Text,
+			Coords:       coords,
+			Timestamp:    time.Now(),
+			Size:         size,
+			Type:         entriesMap["Είδος Καλ/γειας"].Text,
+			Start:        start_input.Text,
+			End:          end_input.Text,
+			Rent:         money,
 		}
-		editedEntry.LandlordName = append(editedEntry.LandlordName, entriesMap["Εκμισθωτής"].Text)
+		// editedEntry.LandlordName = append(editedEntry.LandlordName, entriesMap["Εκμισθωτής"].Text)
 
 		err = updateEntry(appState.db, editedEntry)
 		if err != nil {
@@ -413,17 +404,19 @@ func editForm(appState *AppState, id int) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
+	landLordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabelsContainer)
+
 	// LEFT
 	left_container := container.NewVBox(
-		entriesMap["Εκμισθωτής"],
+		landLordsContainer,
 		entriesMap["Μισθωτής"],
 		layout.NewSpacer(),
-		coordsLabel,
+		addGeoLocButton,
 	)
-	for i := range 4 {
-		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
-		left_container.Add(coordContainer)
-	}
+	// for i := range 4 {
+	// 	coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
+	// 	left_container.Add(coordContainer)
+	// }
 
 	// RIGHT
 	right_container := container.NewVBox(
@@ -471,7 +464,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 }
 
 func listView(appState *AppState) (fyne.CanvasObject, error) {
-	log.Printf("Creating the mainView...")
+	log.Printf("Creating the listView...")
 	entries, err := getAll(appState.db)
 	if err != nil {
 		return nil, err
@@ -509,7 +502,7 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 		log.Printf("Selected item: %d", id)
 		if id >= 0 && id < len(entries) {
 			log.Printf("Showing popup for item: %d", entries[id].ID)
-			showDetailsPopup(entries[id], appState, list, &entries)
+			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].LandlordName)
 			list.UnselectAll()
 		}
 	}
@@ -615,7 +608,7 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 
 // TODO: Bring that inline with the changes in the Structs and AddForm
 // Details popup for the list
-func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry) {
+func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry, landlords *[]LandlordDetails) {
 	log.Printf("Showing popup for: %d", entry.ID)
 
 	editButton := widget.NewButton("Edit", nil)
@@ -630,17 +623,16 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 	// TODO: Did I forget about coordinates ???
 	fmt.Printf("Coords: %d", len(entry.Coords))
 	coordsContainer := container.NewVBox()
-	// for i := range 4 {
-	// 	lat := fmt.Sprintf("Πλάτος %d: %s", i, strconv.FormatFloat(entry.Coords[i].Latitude, 'f', -1, 64))
-	// 	long := fmt.Sprintf("Μήκος %d: %s", i, strconv.FormatFloat(entry.Coords[i].Longitude, 'f', -1, 64))
-	// 	coordContainer := container.NewGridWithColumns(2, widget.NewLabel(lat), widget.NewLabel(long))
-	// 	coordContainer.Add(coordContainer)
-	// }
+
+	landLordsContainer := container.NewVBox(widget.NewLabel("Εκμισθωτής/ές: "))
+	for _, l := range *landlords {
+		landLordsContainer.Add(widget.NewLabel("\t" + l.FirstName + " " + l.LastName))
+	}
 
 	// Add all the details!
 	content := container.NewVBox(
 		widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
-		widget.NewLabel(fmt.Sprintf("Εκμισθωτής: %s", entry.LandlordName)),
+		landLordsContainer,
 		widget.NewLabel(fmt.Sprintf("Μισθωτής: %s", entry.RenterName)),
 		widget.NewLabel(fmt.Sprintf("Μίσθωμα: %.2f€", entry.Rent)),
 		widget.NewLabel(fmt.Sprintf("ΑΠΟ: %s", entry.Start)),
@@ -734,5 +726,79 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 	})
 
 	popup := dialog.NewCustom("Select Date", "Cancel", calendar, window)
+	popup.Show()
+}
+
+func showLandLordDetails(AppState *AppState, landlords *[]LandlordDetails, labelContainer fyne.Container) {
+	log.Printf(">>> landlord: %v\n", landlords)
+	var landlord LandlordDetails
+
+	firstName := widget.NewEntry()
+	firstName.PlaceHolder = "Όνομα"
+
+	lastName := widget.NewEntry()
+	lastName.PlaceHolder = "Επώνυμο"
+
+	fathersName := widget.NewEntry()
+	fathersName.PlaceHolder = "Όνομα Πατρός"
+
+	afm := widget.NewEntry() // ΑΦΜ
+	afm.PlaceHolder = "Α.Φ.Μ."
+
+	adt := widget.NewEntry() // ΑΔΤ
+	adt.PlaceHolder = "Α.Δ.Τ."
+
+	ata := widget.NewEntry()
+	ata.PlaceHolder = "Α.Τ.Α."
+
+	labelE9 := widget.NewLabel("E9")
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), nil)
+
+	notes := widget.NewEntry()
+
+	cancelButton := widget.NewButton("Cancel", nil)
+	saveButton := widget.NewButton("Save", nil)
+
+	containerE9 := container.NewHBox(labelE9, buttonE9)
+	buttonContainer := container.NewHBox(cancelButton, saveButton)
+	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, ata, containerE9, notes, buttonContainer)
+
+	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
+
+	cancelButton.OnTapped = func() {
+		popup.Hide()
+	}
+
+	saveButton.OnTapped = func() {
+		log.Println("Saving a landlord named: ", firstName.Text+""+lastName.Text)
+		if firstName.Text == "" || lastName.Text == "" {
+			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), AppState.window)
+		}
+		afmINT, err := strconv.Atoi(afm.Text)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), AppState.window)
+		}
+		ataINT, err := strconv.Atoi(ata.Text)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("A.T.AK is not valid."), AppState.window)
+		}
+
+		landlord.FirstName = firstName.Text
+		landlord.LastName = lastName.Text
+		landlord.FathersName = fathersName.Text
+		landlord.AFM = afmINT
+		landlord.ADT = adt.Text
+		landlord.ATA = ataINT
+		// E9 TODO
+		landlord.Notes = notes.Text
+
+		log.Printf(">>> landlord struct: %v\n", landlord)
+		*landlords = append(*landlords, landlord)
+		labelContainer.Add(widget.NewLabel(landlord.FirstName + " " + landlord.LastName))
+
+		popup.Hide()
+	}
+
+	popup.Resize(fyne.NewSize(300, 500))
 	popup.Show()
 }

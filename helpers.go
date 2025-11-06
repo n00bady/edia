@@ -26,7 +26,7 @@ func ParseFloatToXDecimals(n string, d int) (float64, error) {
 	}
 
 	decimals := math.Pow(10, float64(d))
-	rounded := math.Round(v*decimals) / decimals 
+	rounded := math.Round(v*decimals) / decimals
 
 	return rounded, nil
 }
@@ -59,7 +59,17 @@ func IsNegative(f float64) (bool, error) {
 
 // Truncate a float32 to 2 decimals
 func TruncateFloatTo2Decimals(f float64) float64 {
-	return float64(int(f*100))/100
+	return float64(int(f*100)) / 100
+}
+
+func Contains(sl []string, str string) bool {
+	for _, v := range sl {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Calculates the absolute Y pos
