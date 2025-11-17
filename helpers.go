@@ -71,19 +71,3 @@ func Contains(sl []string, str string) bool {
 
 	return false
 }
-
-// Calculates the absolute Y pos
-// func getAbsoluteY(obj fyne.CanvasObject, relative fyne.CanvasObject) float32 {
-// 	var y float32
-// 	curr := obj
-// 	for curr != nil && curr != relative {
-// 		pos := curr.Position()
-// 		y += pos.Y
-//
-// 		if parent, ok := obj.(*container.Scroll); ok {
-// 			curr = parent.Content
-// 		}
-// 	}
-//
-// 	return y
-// }

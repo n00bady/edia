@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -146,7 +148,7 @@ func updateEntry(db *sql.DB, entry Entry) error {
 		var id int
 		err := getCoords.Scan(&id)
 		if err != nil {
-			return fmt.Errorf("could not get coordinates IDs for entery: %d", entry.ID)
+			return fmt.Errorf("could not get coordinates IDs for entry: %d", entry.ID)
 		}
 		coord_IDs = append(coord_IDs, id)
 	}
@@ -165,11 +167,11 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	}()
 
 	updateSQL := `
-		UPDATE entries SET LandLord = ?, Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
+		UPDATE entries SET  Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
 	updateSQLCoords := `
 		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
-	updateLandLords := `
-		UPDATE landlordDetails SET firstName = ?, lastName = ? fathersName = ?, afm = ?, adt = ?, ata = ?, e9 = ?, notes = ? WHEREE entry_id = ? AND id = ?`
+	// updateLandLords := `
+	// 	UPDATE landlordDetails SET firstName = ?, lastName = ?, fathersName = ?, afm = ?, adt = ?, ata = ?, e9 = ?, notes = ? WHERE entry_id = ? AND id = ?`
 
 	// landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
 	res, err := tx.Exec(updateSQL, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
@@ -195,20 +197,25 @@ func updateEntry(db *sql.DB, entry Entry) error {
 		}
 	}
 
-	for _, e := range entry.LandlordName {
-		res, err = tx.Exec(updateLandLords, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes)
-		if err != nil {
-			return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
-		}
-		rowsAff, rowsErr := res.RowsAffected()
-		log.Printf("Rows Affected: %d", rowsAff)
-		log.Printf("Result error: %s", rowsErr)
-	}
+	// for i, e := range entry.LandlordName {
+	// 	res, err = tx.Exec(updateLandLords, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes, entry.ID, landlordsIds[i])
+	// 	if err != nil {
+	// 		return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
+	// 	}
+	// 	rowsAff, rowsErr := res.RowsAffected()
+	// 	log.Printf("Rows Affected: %d", rowsAff)
+	// 	log.Printf("Result error: %s", rowsErr)
+	// }
 
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error commiting transaction to the database: %v", err)
+	}
+
+	err = replaceLandlordsForEntry(db, entry)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("Updated entry %d successfully!", entry.ID)
@@ -356,6 +363,43 @@ func delEntry(db *sql.DB, id int) error {
 	return nil
 }
 
+func getAllLords(db *sql.DB) ([]LandlordDetails, error) {
+	getLandLords := `
+	SELECT 
+		firstName, 
+		lastName, 
+		GROUP_CONCAT(entry_id) 	AS owned_entry_ids 
+	FROM landlordDetails 
+	GROUP BY firstName, lastName 
+	ORDER BY lastName, firstName;
+	`
+
+	log.Printf("Quering landlordDetails database...")
+	result, err := db.Query(getLandLords)
+	if err != nil {
+		return nil, fmt.Errorf("error quering the landlords database: %v", err)
+	}
+
+	var landlords []LandlordDetails
+	var entryIDs string
+	for result.Next() {
+		var landlord LandlordDetails
+		err := result.Scan(&landlord.FirstName, &landlord.LastName, &entryIDs)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving landlordDetails from database: %v", err)
+		}
+		idsStr := strings.Split(entryIDs, ",")
+		for _, s := range idsStr {
+			id, _ := strconv.ParseInt(s, 10, 64)
+			landlord.Entry_IDs = append(landlord.Entry_IDs, int(id))
+		}
+
+		landlords = append(landlords, landlord)
+	}
+
+	return landlords, nil
+}
+
 func resetAutoIncrement(db *sql.DB) error {
 	_, err := db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM entries) WHERE name = 'entries'")
 	if err != nil {
@@ -376,3 +420,33 @@ func resetAutoIncrement(db *sql.DB) error {
 }
 
 // TODO: queries for searching a variety of fields
+func replaceLandlordsForEntry(db *sql.DB, entry Entry) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`DELETE FROM landlordDetails WHERE entry_id = ?`, entry.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	stm, err := tx.Prepare(`
+		INSERT INTO landlordDetails (entry_id, firstName, lastName, fathersName, afm,adt, ata, e9,notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stm.Close()
+
+	for _, l := range entry.LandlordName {
+		_, err := stm.Exec(entry.ID, l.FirstName, l.LastName, l.FathersName, l.AFM, l.ADT, l.ATA, l.E9, l.Notes)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("inserting new landlords failed for entry %d with error: %v", entry.ID, err)
+		}
+	}
+
+	return tx.Commit()
+}

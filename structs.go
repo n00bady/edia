@@ -27,6 +27,8 @@ type Coordinate struct {
 
 // Εκμισθωτές
 type LandlordDetails struct {
+	Entry_IDs   []int
+	Entry_total int
 	FirstName   string
 	LastName    string
 	FathersName string
