@@ -29,7 +29,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	var landLords []LandlordDetails
-	landLordsLabels := make([]*widget.Label, 0)
+	// landLordsLabels := make([]*widget.Label, 0)
 
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
@@ -162,11 +162,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		landLordsLabelsContainer := container.NewVBox()
-		for _, l := range landLords {
-			landLordsLabelsContainer.Add(widget.NewLabel(l.FirstName + " " + l.LastName))
-		}
-		landlordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabels[0])
+		landLordsLabelsContainer.Add(widget.NewLabel(""))
+		landlordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabelsContainer)
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
