@@ -8,50 +8,66 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// For the calendar date selection
-// type Date struct {
-// 	dateChosen *widget.Label
-// }
-
 // It's easier that way
 type AppState struct {
 	db     *sql.DB
 	window fyne.Window
 }
 
+// Main struct/table
+type Entry struct {
+	ID        uint
+	Name      string
+	Timestamp time.Time
+	Renters   []RenterDetails
+	Owners    []OwnerDetails
+	Coords    []Coordinates
+	Size      float64
+	Type      string
+	Start     string
+	End       string
+	Rent      float64
+}
+
 // Coordinates for the land
-type Coordinate struct {
+type Coordinates struct {
+	ID        uint
+	EntryID   uint
 	Latitude  float64
 	Longitude float64
 }
 
 // Εκμισθωτές
-type LandlordDetails struct {
-	Entry_IDs   []int
-	Entry_total int
+type OwnerDetails struct {
+	ID          uint
 	FirstName   string
 	LastName    string
 	FathersName string
-	AFM         int
+	AFM         uint
 	ADT         string
-	ATA         int
+	ATA         uint
 	E9          []byte
 	Notes       string
 }
 
-// An entry is a placeholder for the actual structure that
-// will hold all the data about each Rent and Contracts for
-// farm land
-type Entry struct {
-	ID           int
-	NickName     string
-	Timestamp    time.Time
-	RenterName   string
-	LandlordName []LandlordDetails
-	Coords       []Coordinate
-	Size         float64
-	Type         string
-	Start        string
-	End          string
-	Rent         float64
+// Μισθωτές
+type RenterDetails struct {
+	ID          uint
+	FirstName   string
+	LastName    string
+	FathersName string
+	AFM         uint
+	ADT         string
+	Notes       string
+}
+
+// Junction tables
+type EntryOwner struct {
+	EntryID uint
+	OwnerID uint
+}
+
+type EntryRenter struct {
+	EntryID  uint
+	RenterID uint
 }

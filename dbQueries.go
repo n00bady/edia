@@ -2,12 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -30,14 +29,13 @@ func initDB(dbPath string) (*sql.DB, error) {
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-			NickName TEXT NOT NUll,
-			Timestamp DATETIME NOT NULL,
-			Renter TEXT NOT NULL,
-			Size REAL NOT NULL,
-			Type TEXT NOT NULL,
-			Rent REAL NOT NULL,
-			Start TEXT NOT NULL,
-			End TEXT NOT NULL
+			name TEXT NOT NUll,
+			timestamp DATETIME NOT NULL,
+			size REAL NOT NULL,
+			type TEXT NOT NULL,
+			rent REAL NOT NULL,
+			start TEXT NOT NULL,
+			end TEXT NOT NULL
         );
 	`
 
@@ -50,10 +48,9 @@ func initDB(dbPath string) (*sql.DB, error) {
 	createCoordsTable := `
 		CREATE TABLE IF NOT EXISTS coordinates (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			entry_id INTEGER NOT NULL,
+			entry_id INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
 			latitude REAL NOT NULL,
-			longitude REAL NOT NULL,
-			FOREIGN KEY (entry_id) REFERENCES entries(id)
+			longitude REAL NOT NULL
 		);
 	`
 
@@ -63,10 +60,9 @@ func initDB(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error creating coordinates table: %v", err)
 	}
 
-	createLandLordDetails := `
-		CREATE TABLE IF NOT EXISTS landlordDetails (
+	createOwnerDetails := `
+		CREATE TABLE IF NOT EXISTS ownerDetails (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			entry_id INTEGER NOT NULL,
 			firstName TEXT NOT NULL,
 			lastName TEXT NOT NULL,
 			fathersName TEXT,
@@ -78,10 +74,52 @@ func initDB(dbPath string) (*sql.DB, error) {
 		);
 	`
 
-	log.Printf("Creating table LandLordDetails...")
-	_, err = db.Exec(createLandLordDetails)
+	log.Printf("Creating table ownerDetails...")
+	_, err = db.Exec(createOwnerDetails)
 	if err != nil {
-		return nil, fmt.Errorf("error creating landlordDetails table: %v", err)
+		return nil, fmt.Errorf("error creating ownerDetails table: %v", err)
+	}
+
+	createRenterDetails := `
+		CREATE TABLE IF NOT EXISTS renterDetails (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			firstName TEXT NOT NULL,
+			lastName TEXT NOT NULL,
+			fathersName TEXT,
+			afm INTEGER,
+			adt TEXT,
+			notes TEXT
+		);
+	`
+
+	log.Println("Creating table renterDetails...")
+	_, err = db.Exec(createRenterDetails)
+	if err != nil {
+		return nil, fmt.Errorf("error creating renterDetails tables: %v", err)
+	}
+
+	createJunctionEntriesOnwer := `
+		CREATE TABLE IF NOT EXISTS entries_owner (
+			entry_id INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+			owner_id INTEGER NOT NULL REFERENCES ownerDetails(id) ON DELETE CASCADE
+		);
+	`
+	log.Println("Creating junction table entries_owner...")
+	_, err = db.Exec(createJunctionEntriesOnwer)
+	if err != nil {
+		return nil, fmt.Errorf("error creating juction table entries_owner: %v", err)
+	}
+
+	createJunctionEntriesRenter := `
+		CREATE TABLE IF NOT EXISTS entries_renter (
+			entry_id INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+			renter_id INTEGER NOT NULL REFERENCES renterDetails(id) ON DELETE CASCADE
+		);
+	`
+	log.Println("Creating junction table entries_renter...")
+	_, err = db.Exec(createJunctionEntriesRenter)
+	if err != nil {
+		return nil, fmt.Errorf("error creating juction table entries_renter: %v", err)
 	}
 
 	log.Printf("Tables created successfully!")
@@ -89,317 +127,494 @@ func initDB(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
-// Save an entry
 func saveEntry(db *sql.DB, entry Entry) error {
-	insertSQL := `
-        INSERT INTO entries (NickName, Timestamp, Renter, Size, Type, Rent, Start, End) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	log.Printf("Saving new entry in the database...")
-	result, err := db.Exec(insertSQL, entry.NickName, entry.Timestamp, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
-	if err != nil {
-		return fmt.Errorf("error inserting entry: %v", err)
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("error getting last insert ID: %v", err)
-	}
-	entry.ID = int(id)
-
-	log.Printf("Saving the coordinates in the database...")
-	insertCoordsSQL := `
-		INSERT INTO coordinates (entry_id, latitude, longitude) VALUES (?, ?, ?)`
-	for i := range 4 {
-		_, err := db.Exec(insertCoordsSQL, entry.ID, entry.Coords[i].Latitude, entry.Coords[i].Longitude)
-		if err != nil {
-			return fmt.Errorf("error inserting entry coordinate: %v", err)
-		}
-	}
-
-	log.Printf("Saving the landlordDetails...")
-	insertLandLordDetails := `
-		INSERT INTO landlordDetails (entry_id, firstName, lastName, fathersName, afm, adt, ata, e9, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	for _, e := range entry.LandlordName {
-		_, err := db.Exec(insertLandLordDetails, entry.ID, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes)
-		if err != nil {
-			return fmt.Errorf("error inserting land lord details: %v", err)
-		}
-		log.Printf("Inserting into landlordDetails: %s, %s", e.FirstName, e.LastName)
-	}
-
-	log.Printf("Saved entry successfully!")
-
-	return nil
-}
-
-// Update an Entry
-func updateEntry(db *sql.DB, entry Entry) error {
-	// Get the IDs of the coordinates first
-	getCoordsSQL := `SELECT id FROM coordinates WHERE entry_id = ? ORDER BY id`
-	getCoords, err := db.Query(getCoordsSQL, entry.ID)
-	if err != nil {
-		return fmt.Errorf("could not query the database for the coordinates IDs: %s", err)
-	}
-	var coord_IDs []int
-	for getCoords.Next() {
-		var id int
-		err := getCoords.Scan(&id)
-		if err != nil {
-			return fmt.Errorf("could not get coordinates IDs for entry: %d", entry.ID)
-		}
-		coord_IDs = append(coord_IDs, id)
-	}
-	log.Printf("coord_IDs: %v", coord_IDs)
-	getCoords.Close()
-
-	// Now we can update the the entries and the coordinates tables properly
 	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("error starting a database transaction: %v", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-
-	updateSQL := `
-		UPDATE entries SET  Renter = ?, Size = ?, Type = ?, Rent = ?, Start = ?, End = ? WHERE id = ?`
-	updateSQLCoords := `
-		UPDATE coordinates SET Latitude = ?, Longitude = ? WHERE entry_id = ? AND id = ?`
-	// updateLandLords := `
-	// 	UPDATE landlordDetails SET firstName = ?, lastName = ?, fathersName = ?, afm = ?, adt = ?, ata = ?, e9 = ?, notes = ? WHERE entry_id = ? AND id = ?`
-
-	// landlordNamesJSON, _ := json.Marshal(entry.LandlordName)
-	res, err := tx.Exec(updateSQL, entry.RenterName, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
-	if err != nil {
-		return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
-	}
-	rowsAff, RowErr := res.RowsAffected()
-	log.Printf("Rows Affected: %d", rowsAff)
-	log.Printf("Result error: %s", RowErr)
-
-	if len(entry.Coords) > 4 || len(entry.Coords) < 1 {
-		tx.Rollback()
-		return fmt.Errorf("expected up to 4 pair of coordinates got %d, for entry ID: %d", len(entry.Coords), entry.ID)
-	}
-
-	for i := range len(entry.Coords) {
-		res, err = tx.Exec(updateSQLCoords, entry.Coords[i].Latitude, entry.Coords[i].Longitude, entry.ID, coord_IDs[i])
-		tmpRows, rowErr := res.RowsAffected()
-		log.Printf("Update coordinates %d rows affected: %d", i+1, tmpRows)
-		log.Printf("Result error: %s", rowErr)
-		if err != nil {
-			return fmt.Errorf("error updating coordinates for entry with id: %d: %v", entry.ID, err)
-		}
-	}
-
-	// for i, e := range entry.LandlordName {
-	// 	res, err = tx.Exec(updateLandLords, e.FirstName, e.LastName, e.FathersName, e.AFM, e.ADT, e.ATA, e.E9, e.Notes, entry.ID, landlordsIds[i])
-	// 	if err != nil {
-	// 		return fmt.Errorf("error updating entry %d: %v", entry.ID, err)
-	// 	}
-	// 	rowsAff, rowsErr := res.RowsAffected()
-	// 	log.Printf("Rows Affected: %d", rowsAff)
-	// 	log.Printf("Result error: %s", rowsErr)
-	// }
-
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("error commiting transaction to the database: %v", err)
-	}
-
-	err = replaceLandlordsForEntry(db, entry)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Updated entry %d successfully!", entry.ID)
+	res, err := tx.Exec(`
+		INSERT INTO entries (name, timestamp, size, type, rent, start, end)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		entry.Name, entry.Timestamp, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	entryID, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// get or create onwer(s)
+	for _, o := range entry.Owners {
+		ownerID, err := getOrCreateOwner(tx, o)
+		if err != nil {
+			return err
+		}
+
+		// link owner to entry on the junction tablle
+		_, err = tx.Exec(`
+		INSERT OR IGNORE INTO entries_owner (entry_id, owner_id)
+		VALUES (?, ?)`,
+			entryID, ownerID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// ger or create renter(s)
+	for _, r := range entry.Renters {
+		renterID, err := getOrCreateRenter(tx, r)
+		if err != nil {
+			return err
+		}
+
+		// link owner to entry on the junction tablle
+		_, err = tx.Exec(`
+		INSERT OR IGNORE INTO entries_renter (entry_id, renter_id)
+		VALUES (?, ?)`,
+			entryID, renterID)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	// coordinates
+	for _, c := range entry.Coords {
+		_, err := tx.Exec(`
+			INSERT INTO coordinates (entry_id, latitude, longitude)
+			VALUES (?, ?, ?)`,
+			entryID, c.Latitude, c.Longitude)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
-func getAll(db *sql.DB) ([]Entry, error) {
-	selectSQL := `
-		SELECT * FROM entries
-	`
+func getOrCreateOwner(tx *sql.Tx, o OwnerDetails) (int64, error) {
+	var ownerID int64
 
-	log.Printf("Quering database...")
-	result, err := db.Query(selectSQL)
-	if err != nil {
-		return nil, fmt.Errorf("error quering the database: %v", err)
+	query := `SELECT id FROM ownerDetails WHERE firstName = ? AND lastName = ?`
+	err := tx.QueryRow(query, o.FirstName, o.LastName).Scan(&ownerID)
+	if err == nil {
+		return ownerID, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, err
 	}
 
+	res, err := tx.Exec(`
+		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, ata, e9, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.ATA, o.E9, o.Notes)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.LastInsertId()
+}
+
+func getOrCreateRenter(tx *sql.Tx, r RenterDetails) (int64, error) {
+	var renterID int64
+
+	query := `SELECT id FROM renterDetails WHERE firstName = ? AND lastName = ?`
+	err := tx.QueryRow(query, r.FirstName, r.LastName).Scan(&renterID)
+	if err == nil {
+		return renterID, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, err
+	}
+
+	res, err := tx.Exec(`
+		INSERT INTO renterDetails (firstName, lastName, fathersName, afm, adt, notes)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		r.FirstName, r.LastName, r.AFM, r.ADT, r.Notes)
+	if err != nil {
+		return 0, nil
+	}
+
+	return res.LastInsertId()
+}
+
+func updateEntry(db *sql.DB, entry Entry) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`
+		UPDATE entries
+		SET name = ?, timestamp = ?, size = ?, type = ?, rent = ?, start = ?, end = ?
+		WHERE id = ?`,
+		entry.Name, entry.Timestamp, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+		DELETE FROM entries_owner WHERE entry_id = ?`,
+		entry.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range entry.Owners {
+		ownerID, err := getOrCreateOwner(tx, o)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO entries_owner (entry_id, owner_id)
+			VALUES (?, ?)`,
+			entry.ID, ownerID)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`
+		DELETE FROM entries_renter WHERE entry_id = ?`,
+		entry.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range entry.Renters {
+		renterID, err := getOrCreateRenter(tx, r)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO entries_renter (entry_id, category_id)
+			VALUES (?, ?)`,
+			entry.ID, renterID)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`
+		DELETE FROM coordinates WHERE entry_id = ?`,
+		entry.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range entry.Coords {
+		_, err := tx.Exec(`
+			INSERT INTO coordinates (entry_id, latitude, longitude)
+			VALUES (?, ?, ?)`,
+			entry.ID, c.Latitude, c.Longitude)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func getAllEntries(db *sql.DB) ([]Entry, error) {
 	var entries []Entry
 
-	for result.Next() {
-		var entry Entry
-		err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving entries from database: %v", err)
-		}
-
-		selectLandLords := `SELECT firstName, lastName, fathersName, afm, adt, ata, e9, notes FROM landlordDetails WHERE entry_id = ?`
-
-		var landlords []LandlordDetails
-		res, err := db.Query(selectLandLords, entry.ID)
-		if err != nil {
-			return nil, fmt.Errorf("error quering the land lords database: %v", err)
-		}
-		for res.Next() {
-			var landlord LandlordDetails
-			err := res.Scan(&landlord.FirstName, &landlord.LastName, &landlord.FathersName, &landlord.AFM, &landlord.ADT, &landlord.ATA, &landlord.E9, &landlord.Notes)
-			if err != nil {
-				return nil, fmt.Errorf("error retrieving land lords details for entry %d: %v", entry.ID, err)
-			}
-
-			landlords = append(landlords, landlord)
-		}
-		entry.LandlordName = landlords
-
-		entries = append(entries, entry)
+	rows, err := db.Query(`SELECT * FROM entries`)
+	if err != nil {
+		return nil, err
 	}
-	log.Printf("Retrieved the results successfully!")
-	log.Printf("RESULTS:\n%v", entries)
+	defer rows.Close()
+
+	for rows.Next() {
+		var e Entry
+
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		if err != nil {
+			return nil, err
+		}
+
+		// get the owners for the entry
+		ownerRows, err := db.Query(`
+			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.ata, o.e9, o.notes 
+			FROM ownerDetails o
+			JOIN entries_owner eo ON o.id = eo.owner_id
+			WHERE eo.entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for ownerRows.Next() {
+			var o OwnerDetails
+
+			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
+			if err != nil {
+				ownerRows.Close()
+				return nil, err
+			}
+			e.Owners = append(e.Owners, o)
+		}
+		ownerRows.Close()
+
+		// get the renters for the entry
+		renterRows, err := db.Query(`
+			SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.notes
+			FROM renterDetails r
+			JOIN entries_renter er ON r.id = er.renter_id
+			WHERE er.entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for renterRows.Next() {
+			var r RenterDetails
+
+			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+			if err != nil {
+				renterRows.Close()
+				return nil, err
+			}
+			e.Renters = append(e.Renters, r)
+		}
+		renterRows.Close()
+
+		// get the coordinates for the entry
+		coordRows, err := db.Query(`
+			SELECT *
+			FROM coordinates
+			WHERE entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for coordRows.Next() {
+			var c Coordinates
+			err := coordRows.Scan(&c.ID, &c.EntryID, &c.Latitude, &c.Longitude)
+			if err != nil {
+				coordRows.Close()
+				return nil, err
+			}
+			e.Coords = append(e.Coords, c)
+		}
+		coordRows.Close()
+
+		entries = append(entries, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 
 	return entries, nil
 }
 
-func getEntry(db *sql.DB, id int) (*Entry, error) {
-	selectSQL := `
-		SELECT * FROM entries WHERE ID = ?
-	`
-	selectSQLForCoords := `
-		SELECT latitude, longitude FROM coordinates WHERE entry_id = ?
-	`
-	selectSQLForLandLords := `
-		SELECT firstName, lastName, fathersName, afm, adt, ata, e9, notes FROM landlordDetails WHERE entry_id = ?
-	`
+func getEntry(db *sql.DB, id uint) (Entry, error) {
+	var e Entry
 
-	var entry Entry
-
-	log.Printf("Quering the database for entry with id: %d", id)
-	result := db.QueryRow(selectSQL, id)
-	err := result.Scan(&entry.ID, &entry.NickName, &entry.Timestamp, &entry.RenterName, &entry.Size, &entry.Type, &entry.Rent, &entry.Start, &entry.End)
-	if err == sql.ErrNoRows {
-		return nil, err
-	} else if err != nil {
-		return nil, fmt.Errorf("error retrieving entry with id: %d: %v", id, err)
+	err := db.QueryRow(`
+		SELECT * 
+		FROM entries 
+		WHERE id = ?`, id).Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+	if err != nil {
+		return e, err
 	}
 
-	resultLandLords, err := db.Query(selectSQLForLandLords, id)
+	// get Owners
+	e.Owners, err = getOwners(db, e)
+	if err != nil {
+		return e, err
+	}
+
+	// get Renters
+	e.Renters, err = getRenters(db, e)
+	if err != nil {
+		return e, err
+	}
+
+	// get coordinates
+	e.Coords, err = getCoords(db, e)
+	if err != nil {
+		return e, err
+	}
+
+	return e, nil
+}
+
+func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
+	var owners []OwnerDetails
+
+	rows, err := db.Query(`
+		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.ata, o.e9, o.notes
+		FROM ownerDetails o
+		JOIN entries_owner eo ON o.id = eo.owner_id
+		WHERE eo.entry_id = ?`,
+		e.ID)
+	if err != nil {
+		return owners, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var o OwnerDetails
+
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
+		if err != nil {
+			return owners, err
+		}
+		owners = append(owners, o)
+	}
+
+	return owners, nil
+}
+
+func getRenters(db *sql.DB, e Entry) ([]RenterDetails, error) {
+	var renters []RenterDetails
+
+	rows, err := db.Query(`
+		SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.notes
+		FROM renterDetails r
+		JOIN entries_renter er ON r.id = er.renter_id
+		WHERE er.entry_id = ?`,
+		e.ID)
+	if err != nil {
+		return renters, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var r RenterDetails
+
+		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+		if err != nil {
+			return renters, err
+		}
+		renters = append(renters, r)
+	}
+
+	return renters, nil
+}
+
+func getCoords(db *sql.DB, e Entry) ([]Coordinates, error) {
+	var coordinates []Coordinates
+
+	rows, err := db.Query(`
+		SELECT id, entry_id, latitude, longitude
+		FROM coordinates
+		WHERE entry_id = ?`,
+		e.ID)
 	if err != nil {
 		return nil, err
 	}
-	for resultLandLords.Next() {
-		var landlord LandlordDetails
-		err := resultLandLords.Scan(&landlord.FirstName, &landlord.LastName, &landlord.FathersName, &landlord.AFM, &landlord.ADT, &landlord.ATA, &landlord.E9, &landlord.Notes)
+	defer rows.Close()
+
+	for rows.Next() {
+		var c Coordinates
+
+		err := rows.Scan(&c.ID, &c.EntryID, &c.Latitude, &c.Longitude)
 		if err != nil {
 			return nil, err
 		}
-		entry.LandlordName = append(entry.LandlordName, landlord)
+		coordinates = append(coordinates, c)
 	}
 
-	resultCoords, err := db.Query(selectSQLForCoords, id)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving coordinates for entry with id: %d: %v", id, err)
-	}
-	for resultCoords.Next() {
-		var coord Coordinate
-		err := resultCoords.Scan(&coord.Latitude, &coord.Longitude)
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving coordinates for entry with id: %d: %v", id, err)
-		}
-		entry.Coords = append(entry.Coords, coord)
-	}
-
-	return &entry, nil
+	return coordinates, nil
 }
 
-func delEntry(db *sql.DB, id int) error {
-	delCoordsSQL := `
-		Delete From coordinates Where entry_id = ?
-	`
-	delEntrySQL2 := `
-		Delete From entries Where id = ?
-	`
-
-	delLandLords := `
-		DELETE FROM landlordDetails WHERE id = ?
-	`
-
-	log.Printf("Deleting entry %d and it's coordinates", id)
-
-	log.Printf("Deleting coordinates for entry: %d", id)
-	_, err := db.Exec(delCoordsSQL, id)
-	if err != nil {
-		return fmt.Errorf("could not delete coordinates for entry %d", id)
+func delEntry(db *sql.DB, id uint) error {
+	if id <= 0 {
+		return errors.New("invalid entry id")
 	}
 
-	log.Printf("Deleting landlord details for entry: %d", id)
-	_, err = db.Exec(delLandLords, id)
+	tx, err := db.Begin()
 	if err != nil {
-		return fmt.Errorf("could not delete landlord details for entry %d", id)
+		return err
+	}
+	defer tx.Rollback()
+
+	var exists bool
+	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM entries WHERE id = ?)", id).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("entry not found")
 	}
 
-	log.Printf("Deleting entry %d from entries.", id)
-	_, err = db.Exec(delEntrySQL2, id)
+	res, err := tx.Exec("DELETE FROM entries WHERE id = ?", id)
 	if err != nil {
-		return fmt.Errorf("could not delete entry: %d", id)
+		return err
 	}
 
-	log.Printf("Reseting sqlite autoincrement.")
-	err = resetAutoIncrement(db)
+	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("reset autoincrement error")
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("entry not found")
 	}
 
-	log.Printf("Deleted entry %d successfully!", id)
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func getAllLords(db *sql.DB) ([]LandlordDetails, error) {
-	getLandLords := `
-	SELECT 
-		firstName, 
-		lastName, 
-		GROUP_CONCAT(entry_id) 	AS owned_entry_ids 
-	FROM landlordDetails 
-	GROUP BY firstName, lastName 
-	ORDER BY lastName, firstName;
-	`
+func getAllOwners(db *sql.DB) ([]OwnerDetails, error) {
+	var owners []OwnerDetails
 
-	log.Printf("Quering landlordDetails database...")
-	result, err := db.Query(getLandLords)
+	rows, err := db.Query(`SELECT * FROM ownerDetails`)
 	if err != nil {
-		return nil, fmt.Errorf("error quering the landlords database: %v", err)
+		return owners, err
 	}
 
-	var landlords []LandlordDetails
-	var entryIDs string
-	for result.Next() {
-		var landlord LandlordDetails
-		err := result.Scan(&landlord.FirstName, &landlord.LastName, &entryIDs)
+	for rows.Next() {
+		var o OwnerDetails
+
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
 		if err != nil {
-			return nil, fmt.Errorf("error retrieving landlordDetails from database: %v", err)
+			return owners, err
 		}
-		idsStr := strings.Split(entryIDs, ",")
-		for _, s := range idsStr {
-			id, _ := strconv.ParseInt(s, 10, 64)
-			landlord.Entry_IDs = append(landlord.Entry_IDs, int(id))
-		}
-
-		landlords = append(landlords, landlord)
+		owners = append(owners, o)
 	}
-
-	return landlords, nil
+	return owners, nil
 }
 
+func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
+	var entries []Entry
+
+	rows, err := db.Query(`
+		SELECT e.id, e.name, e.timestamp, e.size, e.type, e.rent, e.start, e.end
+		FROM entries e
+		JOIN entries_owner eo ON e.id = eo.entry_id
+		WHERE eo.owner_id = ?`,
+		o.ID)
+	if err != nil {
+		return entries, err
+	}
+
+	for rows.Next() {
+		var e Entry
+
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		if err != nil {
+			return entries, err
+		}
+		entries = append(entries, e)
+	}
+
+	return entries, nil
+}
+
+// might not need this anymore...
 func resetAutoIncrement(db *sql.DB) error {
 	_, err := db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM entries) WHERE name = 'entries'")
 	if err != nil {
@@ -411,42 +626,10 @@ func resetAutoIncrement(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM landlordDetails) WHERE name = 'landlordDetails'")
+	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM personDetails) WHERE name = 'personDetails'")
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// TODO: queries for searching a variety of fields
-func replaceLandlordsForEntry(db *sql.DB, entry Entry) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`DELETE FROM landlordDetails WHERE entry_id = ?`, entry.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	stm, err := tx.Prepare(`
-		INSERT INTO landlordDetails (entry_id, firstName, lastName, fathersName, afm,adt, ata, e9,notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	defer stm.Close()
-
-	for _, l := range entry.LandlordName {
-		_, err := stm.Exec(entry.ID, l.FirstName, l.LastName, l.FathersName, l.AFM, l.ADT, l.ATA, l.E9, l.Notes)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("inserting new landlords failed for entry %d with error: %v", entry.ID, err)
-		}
-	}
-
-	return tx.Commit()
 }
