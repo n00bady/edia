@@ -165,7 +165,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 	// ger or create renter(s)
 	for _, r := range entry.Renters {
-		renterID, err := getOrCreateRenter(tx, r)
+		renterID, err := getOrCreateRenters(tx, r)
 		if err != nil {
 			return err
 		}
@@ -218,7 +218,7 @@ func getOrCreateOwner(tx *sql.Tx, o OwnerDetails) (int64, error) {
 	return res.LastInsertId()
 }
 
-func getOrCreateRenter(tx *sql.Tx, r RenterDetails) (int64, error) {
+func getOrCreateRenters(tx *sql.Tx, r RenterDetails) (int64, error) {
 	var renterID int64
 
 	query := `SELECT id FROM renterDetails WHERE firstName = ? AND lastName = ?`
@@ -233,7 +233,7 @@ func getOrCreateRenter(tx *sql.Tx, r RenterDetails) (int64, error) {
 	res, err := tx.Exec(`
 		INSERT INTO renterDetails (firstName, lastName, fathersName, afm, adt, notes)
 		VALUES (?, ?, ?, ?, ?, ?)`,
-		r.FirstName, r.LastName, r.AFM, r.ADT, r.Notes)
+		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.Notes)
 	if err != nil {
 		return 0, nil
 	}
@@ -287,13 +287,13 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	}
 
 	for _, r := range entry.Renters {
-		renterID, err := getOrCreateRenter(tx, r)
+		renterID, err := getOrCreateRenters(tx, r)
 		if err != nil {
 			return err
 		}
 
 		_, err = tx.Exec(`
-			INSERT INTO entries_renter (entry_id, category_id)
+			INSERT INTO entries_renter (entry_id, renter_id)
 			VALUES (?, ?)`,
 			entry.ID, renterID)
 		if err != nil {
@@ -585,7 +585,29 @@ func getAllOwners(db *sql.DB) ([]OwnerDetails, error) {
 		}
 		owners = append(owners, o)
 	}
+
 	return owners, nil
+}
+
+func getAllRenters(db *sql.DB) ([]RenterDetails, error) {
+	var renters []RenterDetails
+
+	rows, err := db.Query(`SELECT * FROM renterDetails`)
+	if err != nil {
+		return renters, err
+	}
+
+	for rows.Next() {
+		var r RenterDetails
+
+		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+		if err != nil {
+			return renters, err
+		}
+		renters = append(renters, r)
+	}
+
+	return renters, nil
 }
 
 func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
@@ -597,6 +619,32 @@ func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 		JOIN entries_owner eo ON e.id = eo.entry_id
 		WHERE eo.owner_id = ?`,
 		o.ID)
+	if err != nil {
+		return entries, err
+	}
+
+	for rows.Next() {
+		var e Entry
+
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		if err != nil {
+			return entries, err
+		}
+		entries = append(entries, e)
+	}
+
+	return entries, nil
+}
+
+func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
+	var entries []Entry
+
+	rows, err := db.Query(`
+		SELECT e.id, e.name, e.timestamp, e.size, e.type, e.rent, e.start, e.end
+		FROM entries e
+		JOIN entries_renter er ON e.id = er.entry_id
+		WHERE er.renter_id = ?`,
+		r.ID)
 	if err != nil {
 		return entries, err
 	}

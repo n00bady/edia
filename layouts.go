@@ -69,14 +69,14 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Button to add multiple landlords
 	landLordsLabelsContainer := container.NewVBox()
-	addLandLord := widget.NewButtonWithIcon("Add Landlord", theme.ContentAddIcon(), func() {
+	addLandLord := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer, func(s string) {
 			landLordsLabelsContainer.Add(widget.NewLabel(s))
 			landLordsLabelsContainer.Refresh()
 		})
 	})
 	renterLabelsContainer := container.NewVBox()
-	addRenter := widget.NewButtonWithIcon("Add Renter", theme.ContentAddIcon(), func() {
+	addRenter := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		showRenterDetails(appState, &renters, *renterLabelsContainer, func(s string) {
 			renterLabelsContainer.Add(widget.NewLabel(s))
 			renterLabelsContainer.Refresh()
@@ -152,7 +152,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 
 		// return to mainView
-		mainview, err := listView(appState)
+		mainview, err := nameView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 			dialog.ShowError(err, appState.window)
@@ -162,7 +162,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Cancel button to go back
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := listView(appState)
+		tmp, err := nameView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -173,11 +173,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		landLordsLabelsContainer.Add(widget.NewLabel(""))
-		landlordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabelsContainer)
-
-		renterLabelsContainer.Add(widget.NewLabel("TEST!!"))
-		rentersContainer := container.NewBorder(nil, nil, nil, addRenter, renterLabelsContainer)
+		landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
+		rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenter, renterLabelsContainer)
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -232,10 +229,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	} else {
 		// --Desktop layout--
-		landLordsLabelsContainer.Add(widget.NewLabel("TEST!"))
 		landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord, landLordsLabelsContainer)
-
-		renterLabelsContainer.Add(widget.NewLabel("TEST!!"))
 		rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter, renterLabelsContainer)
 
 		// LEFT
@@ -285,19 +279,13 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	var landLords []OwnerDetails
-	for _, o := range selectedEntry.Owners {
-		landLords = append(landLords, o)
-	}
-
-	var renters []RenterDetails
-	for _, r := range selectedEntry.Renters {
-		renters = append(renters, r)
-	}
+	landLords := selectedEntry.Owners
+	renters := selectedEntry.Renters
 
 	durationLabel := widget.NewLabel("Διαρκεια")
 
 	labelsEntries := []string{
+		"Όνομα",
 		"Στρέμματα",
 		"Είδος Καλ/γειας",
 		"Μίσθωμα",
@@ -309,6 +297,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	}
 
 	// Assign values to entries from the selected Entry
+	entriesMap["Όνομα"].SetText(selectedEntry.Name)
 	entriesMap["Στρέμματα"].SetText(strconv.FormatFloat(selectedEntry.Size, 'f', -1, 64))
 	entriesMap["Είδος Καλ/γειας"].SetText(selectedEntry.Type)
 	entriesMap["Μίσθωμα"].SetText(strconv.FormatFloat(selectedEntry.Rent, 'f', -1, 64))
@@ -345,7 +334,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	for _, l := range landLords {
 		landLordsLabelsContainer.Add(widget.NewLabel(l.FirstName + " " + l.LastName))
 	}
-	addLandLord := widget.NewButtonWithIcon("Add Landlord", theme.ContentAddIcon(), func() {
+	addLandLord := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer, func(s string) {
 			landLordsLabelsContainer.Add(widget.NewLabel(s))
 			landLordsLabelsContainer.Refresh()
@@ -355,7 +344,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	for _, r := range renters {
 		rentersLabelContainer.Add(widget.NewLabel(r.FirstName + " " + r.LastName))
 	}
-	addRenters := widget.NewButtonWithIcon("Add Renter", theme.ContentAddIcon(), func() {
+	addRenters := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		showRenterDetails(appState, &renters, *rentersLabelContainer, func(s string) {
 			rentersLabelContainer.Add(widget.NewLabel(s))
 			rentersLabelContainer.Refresh()
@@ -402,6 +391,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		// We build the new entry here
 		editedEntry := Entry{
 			ID:        id,
+			Name:      entriesMap["Όνομα"].Text,
 			Owners:    landLords,
 			Renters:   renters,
 			Coords:    coords,
@@ -426,7 +416,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	})
 
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := listView(appState)
+		tmp, err := nameView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -434,11 +424,12 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
-	landLordsContainer := container.NewBorder(nil, nil, nil, addLandLord, landLordsLabelsContainer)
-	rentersContainer := container.NewBorder(nil, nil, nil, addRenters, rentersLabelContainer)
+	landLordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
+	rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenters, rentersLabelContainer)
 
 	// LEFT
 	left_container := container.NewVBox(
+		entriesMap["Όνομα"],
 		landLordsContainer,
 		rentersContainer,
 		layout.NewSpacer(),
@@ -472,9 +463,9 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	listViewButton := widget.NewButton("Χωράφια", func() {
-		lView, err := listView(appState)
+		lView, err := nameView(appState)
 		if err != nil {
-			log.Printf("error constructing listView: %v", err)
+			log.Printf("error constructing nameView: %v\n", err)
 			dialog.ShowError(err, appState.window)
 		}
 
@@ -482,35 +473,128 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	})
 
 	landLordButton := widget.NewButton("Ιδιοκτήτες", func() {
-		view, err := landlordsView(appState)
+		view, err := ownersView(appState)
 		if err != nil {
-			log.Printf("error constructing landlordView: %v", err)
+			log.Printf("error constructing ownersView: %v\n", err)
 			dialog.ShowError(err, appState.window)
 		}
 
 		appState.window.SetContent(view)
 	})
 
-	renterButton := widget.NewButton("Μισθωτές", func() {})
+	renterButton := widget.NewButton("Μισθωτές", func() {
+		view, err := rentersView(appState)
+		if err != nil {
+			log.Printf("error constructing renterView: %v\n", err)
+		}
+
+		appState.window.SetContent(view)
+	})
 
 	body := container.New(layout.NewCenterLayout(), container.NewVBox(listViewButton, landLordButton, renterButton))
 
 	return body, nil
 }
 
-// WIP
 func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Println("Creating the rentersView...")
-	// get all renters query
-	// populate a list with unique renters
-	// the rest simalar with the landlordsView()
+	renters, err := getAllRenters(appState.db)
+	log.Printf("query Results: %v\n", renters)
+	if err != nil {
+		return nil, err
+	}
 
+	list := widget.NewList(
+		func() int {
+			return len(renters)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Template")
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			if lii < 0 || lii >= len(renters) {
+				log.Printf("Invalid item ID: %d\n", lii)
+				return
+			}
+
+			renter := renters[lii]
+			label, ok := co.(*widget.Label)
+			if !ok {
+				log.Printf("Canvas object is not *widget.Label, it's: %s\n", fmt.Sprintf("%T", co))
+				return
+			}
+			label.SetText(fmt.Sprintf("%s", renter.FirstName+" "+renter.LastName))
+		},
+	)
+
+	list.OnSelected = func(id widget.ListItemID) {
+		log.Printf("Selected item: %d\n", id)
+		if id >= 0 && id < len(renters) {
+			log.Printf("Showing popup for item: %v\n", renters[id].LastName)
+			showDetailsRenterPopup(appState, &renters[id])
+			list.UnselectAll()
+		}
+	}
+
+	var addButton fyne.CanvasObject
+	var backButton fyne.CanvasObject
+
+	if fyne.CurrentDevice().IsMobile() {
+		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+			tmp, err := AddForm(appState)
+			if err != nil {
+				log.Printf("error constructing mobile layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+
+		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
+			tmp, err := mainView(appState)
+			if err != nil {
+				log.Printf("error constructing main layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+	} else {
+		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
+			tmp, err := AddForm(appState)
+			if err != nil {
+				log.Printf("error constructing desktop layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+
+		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
+			tmp, err := mainView(appState)
+			if err != nil {
+				log.Printf("error constructing main layout: %v", err)
+			}
+			appState.window.SetContent(tmp)
+		})
+	}
+	addButton.Resize(fyne.NewSize(200, 200))
+	backButton.Resize(fyne.NewSize(200, 200))
+
+	body := container.New(
+		layout.NewBorderLayout(nil, nil, nil, nil),
+		container.NewVScroll(list),
+		container.New(
+			layout.NewVBoxLayout(),
+			layout.NewSpacer(),
+			container.New(
+				layout.NewHBoxLayout(),
+				layout.NewSpacer(),
+				container.NewPadded(backButton),
+				container.NewPadded(addButton),
+			),
+		),
+	)
 	log.Println("rentersView created successfully!")
 
-	return nil, nil
+	return body, nil
 }
 
-func landlordsView(appState *AppState) (fyne.CanvasObject, error) {
+func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Println("Creating the landlordView...")
 	landlords, err := getAllOwners(appState.db)
 	log.Printf("query Results: %v\n", landlords)
@@ -534,7 +618,7 @@ func landlordsView(appState *AppState) (fyne.CanvasObject, error) {
 			landlord := landlords[lii]
 			label, ok := co.(*widget.Label)
 			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
+				log.Printf("Canvas object is not *widget.Label, its: %s\n", fmt.Sprintf("%T", co))
 				return
 			}
 			label.SetText(fmt.Sprintf("%s", landlord.FirstName+" "+landlord.LastName))
@@ -545,7 +629,8 @@ func landlordsView(appState *AppState) (fyne.CanvasObject, error) {
 		log.Printf("Selected item: %d\n", id)
 		if id >= 0 && id < len(landlords) {
 			log.Printf("Showing popup for item: %v\n", landlords[id].LastName)
-			showDetailsLandlordPopup(appState, &landlords[id])
+			showDetailsOwnerPopup(appState, &landlords[id])
+			list.UnselectAll()
 		}
 	}
 
@@ -607,7 +692,7 @@ func landlordsView(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func listView(appState *AppState) (fyne.CanvasObject, error) {
+func nameView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the listView...")
 	entries, err := getAllEntries(appState.db)
 	if err != nil {
@@ -619,7 +704,6 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 			return len(entries)
 		},
 		func() fyne.CanvasObject {
-			log.Printf("Creating list template...")
 			return widget.NewLabel("Template")
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
@@ -634,15 +718,15 @@ func listView(appState *AppState) (fyne.CanvasObject, error) {
 				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
 				return
 			}
-			label.SetText(fmt.Sprintf("%d: %s", entry.ID, entry.Name))
+			label.SetText(fmt.Sprintf("%s", entry.Name))
 		},
 	)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d", id)
 		if id >= 0 && id < len(entries) {
-			log.Printf("Showing popup for item: %d", entries[id].ID)
-			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners)
+			log.Printf("Showing popup for item: %d\n", entries[id].ID)
+			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
 			list.UnselectAll()
 		}
 	}
@@ -746,8 +830,8 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 	}
 }
 
-func showDetailsLandlordPopup(appState *AppState, landlord *OwnerDetails) {
-	log.Printf("Showing popup for: %v\n", landlord.LastName)
+func showDetailsRenterPopup(appState *AppState, renter *RenterDetails) {
+	log.Printf("Showing popup for: %v\n", renter.LastName)
 
 	closeButton := widget.NewButton("Close", nil)
 
@@ -755,7 +839,7 @@ func showDetailsLandlordPopup(appState *AppState, landlord *OwnerDetails) {
 		closeButton,
 	)
 
-	entries, err := getOwnerEntries(appState.db, *landlord)
+	entries, err := getRenterEntries(appState.db, *renter)
 	if err != nil {
 		dialog.ShowError(err, appState.window)
 		return
@@ -786,16 +870,19 @@ func showDetailsLandlordPopup(appState *AppState, landlord *OwnerDetails) {
 	)
 
 	list.OnSelected = func(id widget.ListItemID) {
-		log.Printf("Selected item: %d", id)
+		log.Printf("Selected item: %d\n", id)
 		if id >= 0 && id < len(entries) {
-			log.Printf("Showing popup for item: %d", entries[id].ID)
-			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners)
+			log.Printf("Showing popup for item: %d\n", entries[id].ID)
+			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
 			list.UnselectAll()
 		}
 	}
 
+	scrollableList := container.NewVScroll(list)
+	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
+
 	content := container.NewVBox(
-		list,
+		scrollableList,
 		buttonsContainer,
 	)
 
@@ -805,15 +892,78 @@ func showDetailsLandlordPopup(appState *AppState, landlord *OwnerDetails) {
 		popup.Hide()
 	}
 
-	contentMinHeight := content.MinSize().Height
-	popup.Resize(fyne.NewSize(320, contentMinHeight))
+	popup.Show()
+	fmt.Printf("Popup displayed for: %v", renter.LastName)
+}
+
+func showDetailsOwnerPopup(appState *AppState, owner *OwnerDetails) {
+	log.Printf("Showing popup for: %v\n", owner.LastName)
+
+	closeButton := widget.NewButton("Close", nil)
+
+	buttonsContainer := container.NewVBox(
+		closeButton,
+	)
+
+	entries, err := getOwnerEntries(appState.db, *owner)
+	if err != nil {
+		dialog.ShowError(err, appState.window)
+		return
+	}
+
+	list := widget.NewList(
+		func() int {
+			return len(entries)
+		},
+		func() fyne.CanvasObject {
+			log.Printf("Creating list template...")
+			return widget.NewLabel("Template")
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			log.Printf("Updating item with ID: %d", lii)
+			if lii < 0 || lii >= len(entries) {
+				log.Printf("Invalid item ID: %d", lii)
+				return
+			}
+			entry := entries[lii]
+			label, ok := co.(*widget.Label)
+			if !ok {
+				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
+				return
+			}
+			label.SetText(fmt.Sprintf("%s", entry.Name))
+		},
+	)
+
+	list.OnSelected = func(id widget.ListItemID) {
+		log.Printf("Selected item: %d", id)
+		if id >= 0 && id < len(entries) {
+			log.Printf("Showing popup for item: %d", entries[id].ID)
+			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
+			list.UnselectAll()
+		}
+	}
+
+	scrollableList := container.NewVScroll(list)
+	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
+
+	content := container.NewVBox(
+		scrollableList,
+		buttonsContainer,
+	)
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+
+	closeButton.OnTapped = func() {
+		popup.Hide()
+	}
 
 	popup.Show()
-	fmt.Printf("Popup displayed for: %v", landlord.LastName)
+	fmt.Printf("Popup displayed for: %v", owner.LastName)
 }
 
 // Details popup for the list
-func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry, landlords *[]OwnerDetails) {
+func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry, owners *[]OwnerDetails, renters *[]RenterDetails) {
 	log.Printf("Showing popup for: %d", entry.ID)
 
 	editButton := widget.NewButton("Edit", nil)
@@ -825,39 +975,41 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 		container.NewGridWithColumns(2, editButton, deleteButton),
 	)
 
-	// TODO: Did I forget about coordinates ???
-	fmt.Printf("Coords: %d", len(entry.Coords))
-	coordsContainer := container.NewVBox()
+	coordsContainer := container.NewVBox(widget.NewLabel("Συντετγμένες: "))
+	for i, c := range entry.Coords {
+		str := fmt.Sprintf("\t%d Lat.: %f Long.: %f", i+1, c.Latitude, c.Longitude)
+		coordsContainer.Add(widget.NewLabel(str))
+	}
 
-	landLordsContainer := container.NewVBox(widget.NewLabel("Εκμισθωτής/ές: "))
-	for _, l := range *landlords {
-		landLordsContainer.Add(widget.NewLabel("\t" + l.FirstName + " " + l.LastName))
+	ownersContainer := container.NewVBox(widget.NewLabel("Εκμισθωτής/ές: "))
+	for _, o := range *owners {
+		ownersContainer.Add(widget.NewLabel("\t" + o.FirstName + " " + o.LastName))
+	}
+
+	rentersContainer := container.NewVBox(widget.NewLabel("Μισθωτής/ες: "))
+	for _, r := range *renters {
+		rentersContainer.Add(widget.NewLabel("\t" + r.FirstName + " " + r.LastName))
 	}
 
 	// Add all the details!
-	content := container.NewVBox(
-		widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
-		landLordsContainer,
-		widget.NewLabel(fmt.Sprintf("Μισθωτής: %v", entry.Renters)),
-		widget.NewLabel(fmt.Sprintf("Μίσθωμα: %.2f€", entry.Rent)),
-		widget.NewLabel(fmt.Sprintf("ΑΠΟ: %s", entry.Start)),
-		widget.NewLabel(fmt.Sprintf("ΕΩΣ: %s", entry.End)),
-		widget.NewLabel(fmt.Sprintf("Είδος Καλ/γειας: %s", entry.Type)),
-		widget.NewLabel(fmt.Sprintf("Στρέμματα: %.3f", entry.Size)),
-		layout.NewSpacer(),
-		coordsContainer,
-		buttonsContainer,
+	scrollableContainer := container.NewVScroll(
+		container.NewVBox(
+			widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
+			widget.NewLabel(fmt.Sprintf("%s", entry.Name)),
+			ownersContainer,
+			rentersContainer,
+			widget.NewLabel(fmt.Sprintf("Μίσθωμα: %.2f€", entry.Rent)),
+			widget.NewLabel(fmt.Sprintf("ΑΠΟ: %s", entry.Start)),
+			widget.NewLabel(fmt.Sprintf("ΕΩΣ: %s", entry.End)),
+			widget.NewLabel(fmt.Sprintf("Είδος Καλ/γειας: %s", entry.Type)),
+			widget.NewLabel(fmt.Sprintf("Στρέμματα: %.3f", entry.Size)),
+			layout.NewSpacer(),
+			coordsContainer,
+		),
 	)
+	content := container.NewBorder(nil, buttonsContainer, nil, nil, scrollableContainer)
 
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
-
-	// Iterate over all canvas objects of content
-	// and if its a label enable text wrapping
-	for _, obj := range content.Objects {
-		if label, ok := obj.(*widget.Label); ok {
-			label.Wrapping = fyne.TextWrapWord
-		}
-	}
 
 	editButton.OnTapped = func() {
 		editForm, err := editForm(appState, entry.ID)
@@ -880,7 +1032,6 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 			dialog.ShowError(err, appState.window)
 		}
 		// Need to do all that to update the list in the mainView after a deletion
-		// TODO: Maybe make it better
 		*entries, err = getAllEntries(appState.db)
 		if err != nil {
 			log.Printf("Error updating the list: %v", err)
@@ -889,8 +1040,7 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 		popup.Hide()
 	}
 
-	contentMinHeight := content.MinSize().Height
-	popup.Resize(fyne.NewSize(320, contentMinHeight))
+	popup.Resize(fyne.NewSize(appState.window.Canvas().Size().Width*0.8, appState.window.Canvas().Size().Height*0.8))
 
 	popup.Show()
 	fmt.Printf("Popup displayed for: %d", entry.ID)
@@ -911,7 +1061,7 @@ func showGeoLocForm(appState *AppState, entriesMap map[string]*widget.Entry) {
 	}
 	content.Add(closeButton)
 
-	popup.Resize(fyne.NewSize(300, 300))
+	popup.Resize(fyne.NewSize(appState.window.Canvas().Size().Width*0.66, appState.window.Canvas().Size().Height*0.66))
 
 	popup.Show()
 }
@@ -934,8 +1084,8 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 	popup.Show()
 }
 
-func showLandLordDetails(AppState *AppState, landlords *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
-	log.Printf(">>> landlord: %v\n", landlords)
+func showLandLordDetails(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
+	log.Printf(">>> landlord: %v\n", owners)
 	var landlord OwnerDetails
 
 	firstName := widget.NewEntry()
@@ -998,7 +1148,7 @@ func showLandLordDetails(AppState *AppState, landlords *[]OwnerDetails, labelCon
 		landlord.Notes = notes.Text
 
 		log.Printf(">>> landlord struct: %v\n", landlord)
-		*landlords = append(*landlords, landlord)
+		*owners = append(*owners, landlord)
 		labelContainer.Add(widget.NewLabel(landlord.FirstName + " " + landlord.LastName))
 
 		onSave(landlord.FirstName + " " + landlord.LastName)
@@ -1060,7 +1210,7 @@ func showRenterDetails(AppState *AppState, renters *[]RenterDetails, labelContai
 		renter.ADT = adt.Text
 		renter.Notes = notes.Text
 
-		log.Printf(">>> landlord struct: %v\n", renter)
+		log.Printf(">>> renters struct: %v\n", renter)
 		*renters = append(*renters, renter)
 		labelContainer.Add(widget.NewLabel(renter.FirstName + " " + renter.LastName))
 

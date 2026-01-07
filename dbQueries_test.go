@@ -207,7 +207,7 @@ func TestGetOrCreateRenter_ExistingRenter(t *testing.T) {
 
 	tx, _ := db.Begin()
 
-	renterID, err := getOrCreateRenter(tx, renter)
+	renterID, err := getOrCreateRenters(tx, renter)
 	if err != nil {
 		t.Fatalf("getOrCreateRenter returned unexpected error: %v", err)
 	}
@@ -246,7 +246,7 @@ func TestGetOrCreateRenter_NewRenter(t *testing.T) {
 
 	tx, _ := db.Begin()
 
-	renterID, err := getOrCreateRenter(tx, renter)
+	renterID, err := getOrCreateRenters(tx, renter)
 	if err != nil {
 		t.Fatalf("getOrCreateRenter returned unexpected error: %v", err)
 	}
