@@ -70,14 +70,14 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// Button to add multiple landlords
 	landLordsLabelsContainer := container.NewVBox()
 	addLandLord := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer, func(s string) {
+		showOwnerEntriesPopup(appState, &landLords, *landLordsLabelsContainer, func(s string) {
 			landLordsLabelsContainer.Add(widget.NewLabel(s))
 			landLordsLabelsContainer.Refresh()
 		})
 	})
 	renterLabelsContainer := container.NewVBox()
 	addRenter := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		showRenterDetails(appState, &renters, *renterLabelsContainer, func(s string) {
+		showRenterEntriesPopup(appState, &renters, *renterLabelsContainer, func(s string) {
 			renterLabelsContainer.Add(widget.NewLabel(s))
 			renterLabelsContainer.Refresh()
 		})
@@ -335,7 +335,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		landLordsLabelsContainer.Add(widget.NewLabel(l.FirstName + " " + l.LastName))
 	}
 	addLandLord := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		showLandLordDetails(appState, &landLords, *landLordsLabelsContainer, func(s string) {
+		showOwnerEntriesPopup(appState, &landLords, *landLordsLabelsContainer, func(s string) {
 			landLordsLabelsContainer.Add(widget.NewLabel(s))
 			landLordsLabelsContainer.Refresh()
 		})
@@ -345,7 +345,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		rentersLabelContainer.Add(widget.NewLabel(r.FirstName + " " + r.LastName))
 	}
 	addRenters := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		showRenterDetails(appState, &renters, *rentersLabelContainer, func(s string) {
+		showRenterEntriesPopup(appState, &renters, *rentersLabelContainer, func(s string) {
 			rentersLabelContainer.Add(widget.NewLabel(s))
 			rentersLabelContainer.Refresh()
 		})
@@ -1084,7 +1084,7 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 	popup.Show()
 }
 
-func showLandLordDetails(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
+func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> landlord: %v\n", owners)
 	var landlord OwnerDetails
 
@@ -1160,7 +1160,7 @@ func showLandLordDetails(AppState *AppState, owners *[]OwnerDetails, labelContai
 	popup.Show()
 }
 
-func showRenterDetails(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
+func  showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> renters: %v\n", renters)
 	var renter RenterDetails
 
