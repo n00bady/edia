@@ -40,6 +40,8 @@ func main() {
 		AppInst.window.Resize(fyne.NewSize(600, 650))
 	}
 
+	go notify(AppInst)
+
 	log.Printf("Running...")
 	// Runing the app
 	AppInst.window.ShowAndRun()
@@ -78,6 +80,7 @@ func InitApp() (*AppState, error) {
 
 	return &AppState{
 		db:     db,
+		app:    myApp,
 		window: myWindow,
 	}, nil
 }

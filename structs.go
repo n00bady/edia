@@ -11,6 +11,7 @@ import (
 // It's easier that way
 type AppState struct {
 	db     *sql.DB
+	app    fyne.App
 	window fyne.Window
 }
 
