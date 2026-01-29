@@ -137,7 +137,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 
 	res, err := tx.Exec(`
 		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, start, end)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return err
@@ -211,7 +211,7 @@ func getOrCreateOwner(tx *sql.Tx, o OwnerDetails) (int64, error) {
 
 	res, err := tx.Exec(`
 		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, e9, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.E9, o.Notes)
 	if err != nil {
 		return 0, err
@@ -234,7 +234,7 @@ func getOrCreateRenters(tx *sql.Tx, r RenterDetails) (int64, error) {
 
 	res, err := tx.Exec(`
 		INSERT INTO renterDetails (firstName, lastName, fathersName, afm, adt, e9, notes)
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.E9, r.Notes)
 	if err != nil {
 		return 0, nil
