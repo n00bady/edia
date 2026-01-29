@@ -23,6 +23,8 @@ type Entry struct {
 	Renters   []RenterDetails
 	Owners    []OwnerDetails
 	Coords    []Coordinates
+	ATAK      uint
+	KAEK      string
 	Size      float64
 	Type      string
 	Start     string
@@ -46,7 +48,6 @@ type OwnerDetails struct {
 	FathersName string
 	AFM         uint
 	ADT         string
-	ATA         uint
 	E9          []byte
 	Notes       string
 }
@@ -59,6 +60,7 @@ type RenterDetails struct {
 	FathersName string
 	AFM         uint
 	ADT         string
+	E9          []byte
 	Notes       string
 }
 

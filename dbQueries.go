@@ -31,6 +31,8 @@ func initDB(dbPath string) (*sql.DB, error) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NUll,
 			timestamp DATETIME NOT NULL,
+			atak INTEGER NOT NULL,
+			kaek TEXT NOT NULL,
 			size REAL NOT NULL,
 			type TEXT NOT NULL,
 			rent REAL NOT NULL,
@@ -68,7 +70,6 @@ func initDB(dbPath string) (*sql.DB, error) {
 			fathersName TEXT,
 			afm INTEGER,
 			adt TEXT,
-			ata INTEGER,
 			e9 BLOB,
 			notes TEXT
 		);
@@ -88,6 +89,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 			fathersName TEXT,
 			afm INTEGER,
 			adt TEXT,
+			e9 BLOB,
 			notes TEXT
 		);
 	`
@@ -134,9 +136,9 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO entries (name, timestamp, size, type, rent, start, end)
+		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, start, end)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		entry.Name, entry.Timestamp, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
 	if err != nil {
 		return err
 	}
@@ -208,9 +210,9 @@ func getOrCreateOwner(tx *sql.Tx, o OwnerDetails) (int64, error) {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, ata, e9, notes)
+		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, e9, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.ATA, o.E9, o.Notes)
+		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.E9, o.Notes)
 	if err != nil {
 		return 0, err
 	}
@@ -231,9 +233,9 @@ func getOrCreateRenters(tx *sql.Tx, r RenterDetails) (int64, error) {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO renterDetails (firstName, lastName, fathersName, afm, adt, notes)
+		INSERT INTO renterDetails (firstName, lastName, fathersName, afm, adt, e9, notes)
 		VALUES (?, ?, ?, ?, ?, ?)`,
-		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.Notes)
+		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.E9, r.Notes)
 	if err != nil {
 		return 0, nil
 	}
@@ -250,9 +252,9 @@ func updateEntry(db *sql.DB, entry Entry) error {
 
 	_, err = tx.Exec(`
 		UPDATE entries
-		SET name = ?, timestamp = ?, size = ?, type = ?, rent = ?, start = ?, end = ?
+		SET name = ?, timestamp = ?, atak = ?, kaek = ?, size = ?, type = ?, rent = ?, start = ?, end = ?
 		WHERE id = ?`,
-		entry.Name, entry.Timestamp, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
 	if err != nil {
 		return err
 	}
@@ -333,14 +335,14 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 	for rows.Next() {
 		var e Entry
 
-		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
 		if err != nil {
 			return nil, err
 		}
 
 		// get the owners for the entry
 		ownerRows, err := db.Query(`
-			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.ata, o.e9, o.notes 
+			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.notes 
 			FROM ownerDetails o
 			JOIN entries_owner eo ON o.id = eo.owner_id
 			WHERE eo.entry_id = ?`,
@@ -352,7 +354,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 		for ownerRows.Next() {
 			var o OwnerDetails
 
-			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
+			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
 			if err != nil {
 				ownerRows.Close()
 				return nil, err
@@ -363,7 +365,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 
 		// get the renters for the entry
 		renterRows, err := db.Query(`
-			SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.notes
+			SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.e9, r.notes
 			FROM renterDetails r
 			JOIN entries_renter er ON r.id = er.renter_id
 			WHERE er.entry_id = ?`,
@@ -375,7 +377,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 		for renterRows.Next() {
 			var r RenterDetails
 
-			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
 			if err != nil {
 				renterRows.Close()
 				return nil, err
@@ -421,7 +423,7 @@ func getEntry(db *sql.DB, id uint) (Entry, error) {
 	err := db.QueryRow(`
 		SELECT * 
 		FROM entries 
-		WHERE id = ?`, id).Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		WHERE id = ?`, id).Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
 	if err != nil {
 		return e, err
 	}
@@ -451,7 +453,7 @@ func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
 	var owners []OwnerDetails
 
 	rows, err := db.Query(`
-		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.ata, o.e9, o.notes
+		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.notes
 		FROM ownerDetails o
 		JOIN entries_owner eo ON o.id = eo.owner_id
 		WHERE eo.entry_id = ?`,
@@ -464,7 +466,7 @@ func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
 	for rows.Next() {
 		var o OwnerDetails
 
-		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
 		if err != nil {
 			return owners, err
 		}
@@ -478,7 +480,7 @@ func getRenters(db *sql.DB, e Entry) ([]RenterDetails, error) {
 	var renters []RenterDetails
 
 	rows, err := db.Query(`
-		SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.notes
+		SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.e9, r.notes
 		FROM renterDetails r
 		JOIN entries_renter er ON r.id = er.renter_id
 		WHERE er.entry_id = ?`,
@@ -491,7 +493,7 @@ func getRenters(db *sql.DB, e Entry) ([]RenterDetails, error) {
 	for rows.Next() {
 		var r RenterDetails
 
-		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
 		if err != nil {
 			return renters, err
 		}
@@ -579,7 +581,7 @@ func getAllOwners(db *sql.DB) ([]OwnerDetails, error) {
 	for rows.Next() {
 		var o OwnerDetails
 
-		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.ATA, &o.E9, &o.Notes)
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
 		if err != nil {
 			return owners, err
 		}
@@ -600,7 +602,7 @@ func getAllRenters(db *sql.DB) ([]RenterDetails, error) {
 	for rows.Next() {
 		var r RenterDetails
 
-		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.Notes)
+		err := rows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
 		if err != nil {
 			return renters, err
 		}
@@ -614,7 +616,7 @@ func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
-		SELECT e.id, e.name, e.timestamp, e.size, e.type, e.rent, e.start, e.end
+		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.start, e.end
 		FROM entries e
 		JOIN entries_owner eo ON e.id = eo.entry_id
 		WHERE eo.owner_id = ?`,
@@ -626,7 +628,7 @@ func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 	for rows.Next() {
 		var e Entry
 
-		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
 		if err != nil {
 			return entries, err
 		}
@@ -640,7 +642,7 @@ func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
-		SELECT e.id, e.name, e.timestamp, e.size, e.type, e.rent, e.start, e.end
+		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.start, e.end
 		FROM entries e
 		JOIN entries_renter er ON e.id = er.entry_id
 		WHERE er.renter_id = ?`,
@@ -652,7 +654,7 @@ func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	for rows.Next() {
 		var e Entry
 
-		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
 		if err != nil {
 			return entries, err
 		}

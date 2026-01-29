@@ -34,6 +34,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
 		"Μισθωτής",
+		"ATAK",
+		"KAEK",
 		"Στρέμματα",
 		"Είδος Καλ/γειας",
 		"Μίσθωμα",
@@ -103,6 +105,13 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinates{Latitude: latValue, Longitude: longValue})
 		}
+
+		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 32)
+		if err != nil {
+			log.Printf("Error parsing ATAK")
+			dialog.ShowError(err, appState.window)
+		}
+
 		// and the size
 		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
 		if err != nil {
@@ -134,6 +143,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			Renters:   renters,
 			Coords:    coords,
 			Timestamp: time.Now(),
+			ATAK:      uint(atak),
+			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,
 			Start:     start_input.Text,
@@ -185,6 +196,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		)
 
 		rightContainer := container.NewVBox(
+			entriesMap["ATAK"],
+			entriesMap["KAEK"],
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
@@ -203,15 +216,18 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			buttons,
 		)
 
+		// TODO: Modify to bring it inline with the rest of the changes.
 		allInputs := []fyne.CanvasObject{
 			entriesMap["Όνομα Εγγραφής"],
+			entriesMap["ATAK"],
+			entriesMap["KAEK"],
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
-			entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
-			entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
-			entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
-			entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
+			// entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
+			// entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
+			// entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
+			// entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
 		}
 
 		// Unfocuses to prevent tapping every single entry field when draging
@@ -243,6 +259,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 		// RIGHT
 		right_container := container.NewVBox(
+			entriesMap["ATAK"],
+			entriesMap["KAEK"],
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
@@ -286,6 +304,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 	labelsEntries := []string{
 		"Όνομα",
+		"ATAK",
+		"KAEK",
 		"Στρέμματα",
 		"Είδος Καλ/γειας",
 		"Μίσθωμα",
@@ -298,6 +318,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 	// Assign values to entries from the selected Entry
 	entriesMap["Όνομα"].SetText(selectedEntry.Name)
+	entriesMap["ATAK"].SetText(strconv.FormatUint(uint64(selectedEntry.ATAK), 10))
+	entriesMap["KAEK"].SetText(selectedEntry.KAEK)
 	entriesMap["Στρέμματα"].SetText(strconv.FormatFloat(selectedEntry.Size, 'f', -1, 64))
 	entriesMap["Είδος Καλ/γειας"].SetText(selectedEntry.Type)
 	entriesMap["Μίσθωμα"].SetText(strconv.FormatFloat(selectedEntry.Rent, 'f', -1, 64))
@@ -374,6 +396,13 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 			coords = append(coords, Coordinates{Latitude: latValue, Longitude: longValue})
 		}
+
+		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 32)
+		if err != nil {
+			log.Printf("Error parsing ATAK")
+			dialog.ShowError(err, appState.window)
+		}
+
 		// and the size
 		size, err := strconv.ParseFloat(entriesMap["Στρέμματα"].Text, 64)
 		if err != nil {
@@ -396,6 +425,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			Renters:   renters,
 			Coords:    coords,
 			Timestamp: time.Now(),
+			ATAK:      uint(atak),
+			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,
 			Start:     start_input.Text,
@@ -438,6 +469,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 	// RIGHT
 	right_container := container.NewVBox(
+		entriesMap["ATAK"],
+		entriesMap["KAEK"],
 		entriesMap["Στρέμματα"],
 		entriesMap["Είδος Καλ/γειας"],
 		entriesMap["Μίσθωμα"],
@@ -1103,9 +1136,6 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 	adt := widget.NewEntry() // ΑΔΤ
 	adt.PlaceHolder = "Α.Δ.Τ."
 
-	ata := widget.NewEntry()
-	ata.PlaceHolder = "Α.Τ.Α."
-
 	labelE9 := widget.NewLabel("E9")
 	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), nil)
 
@@ -1116,7 +1146,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 
 	containerE9 := container.NewHBox(labelE9, buttonE9)
 	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, ata, containerE9, notes, buttonContainer)
+	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
 
 	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
 
@@ -1133,17 +1163,12 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), AppState.window)
 		}
-		ata2Uint, err := strconv.ParseUint(ata.Text, 10, 0)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("A.T.AK is not valid."), AppState.window)
-		}
 
 		landlord.FirstName = firstName.Text
 		landlord.LastName = lastName.Text
 		landlord.FathersName = fathersName.Text
 		landlord.AFM = uint(afm2Uint)
 		landlord.ADT = adt.Text
-		landlord.ATA = uint(ata2Uint)
 		// E9 TODO
 		landlord.Notes = notes.Text
 
@@ -1160,7 +1185,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 	popup.Show()
 }
 
-func  showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
+func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> renters: %v\n", renters)
 	var renter RenterDetails
 
@@ -1179,13 +1204,17 @@ func  showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, label
 	adt := widget.NewEntry() // ΑΔΤ
 	adt.PlaceHolder = "Α.Δ.Τ."
 
+	labelE9 := widget.NewLabel("E9")
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), nil)
+
 	notes := widget.NewEntry()
 
 	cancelButton := widget.NewButton("Cancel", nil)
 	saveButton := widget.NewButton("Save", nil)
 
+	containerE9 := container.NewHBox(labelE9, buttonE9)
 	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, notes, buttonContainer)
+	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
 
 	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
 
