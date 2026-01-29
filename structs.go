@@ -30,6 +30,7 @@ type Entry struct {
 	Start     string
 	End       string
 	Rent      float64
+	emisth    []byte
 }
 
 // Coordinates for the land

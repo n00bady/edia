@@ -37,7 +37,8 @@ func initDB(dbPath string) (*sql.DB, error) {
 			type TEXT NOT NULL,
 			rent REAL NOT NULL,
 			start TEXT NOT NULL,
-			end TEXT NOT NULL
+			end TEXT NOT NULL,
+			emisth BLOB
         );
 	`
 
@@ -136,9 +137,9 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, start, end)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End)
+		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, start, end, emisth)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.emisth)
 	if err != nil {
 		return err
 	}
@@ -252,9 +253,9 @@ func updateEntry(db *sql.DB, entry Entry) error {
 
 	_, err = tx.Exec(`
 		UPDATE entries
-		SET name = ?, timestamp = ?, atak = ?, kaek = ?, size = ?, type = ?, rent = ?, start = ?, end = ?
+		SET name = ?, timestamp = ?, atak = ?, kaek = ?, size = ?, type = ?, rent = ?, start = ?, end = ?, emisth = ?
 		WHERE id = ?`,
-		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.ID)
+		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.emisth, entry.ID)
 	if err != nil {
 		return err
 	}
@@ -423,7 +424,7 @@ func getEntry(db *sql.DB, id uint) (Entry, error) {
 	err := db.QueryRow(`
 		SELECT * 
 		FROM entries 
-		WHERE id = ?`, id).Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		WHERE id = ?`, id).Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End, &e.emisth)
 	if err != nil {
 		return e, err
 	}

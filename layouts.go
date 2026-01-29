@@ -32,6 +32,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	var landLords []OwnerDetails
 	var renters []RenterDetails
+	var selectedFileBytes []byte
 
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
@@ -91,6 +92,26 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	addGeoLocButton := widget.NewButtonWithIcon("Add GeoCoordinates", theme.ContentAddIcon(), func() {
 		showGeoLocForm(appState, entriesMap)
 	})
+
+	labelEmisth := widget.NewLabel("Μησθωτήριο")
+	buttonEmisth := widget.NewButtonWithIcon("Add Μησθωτήριο", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, appState.window)
+				return
+			}
+		}, appState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png"}))
+		dlg.Show()
+	})
+	containerEmisth := container.NewHBox(labelEmisth, buttonEmisth)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -152,6 +173,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			Start:     start_input.Text,
 			End:       end_input.Text,
 			Rent:      money,
+			emisth:    selectedFileBytes,
 		}
 
 		err = saveEntry(appState.db, newEntry)
@@ -203,6 +225,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
+			containerEmisth,
 			layout.NewSpacer(),
 			durationLabel,
 			startDateInput,
@@ -266,6 +289,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
+			containerEmisth,
 			layout.NewSpacer(),
 			durationLabel,
 			startDateInput,
@@ -291,6 +315,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	log.Printf("Creating desktop edit form...")
+	var selectedFileBytes []byte
 
 	entriesMap := make(map[string]*widget.Entry)
 
@@ -379,6 +404,26 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		showGeoLocForm(appState, entriesMap)
 	})
 
+	labelEmisth := widget.NewLabel("Μησθωτήριο")
+	buttonEmisth := widget.NewButtonWithIcon("Add Μησθωτήριο", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, appState.window)
+				return
+			}
+		}, appState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png"}))
+		dlg.Show()
+	})
+	containerEmisth := container.NewHBox(labelEmisth, buttonEmisth)
+
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
 		coords := make([]Coordinates, 0, 4)
@@ -434,6 +479,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			Start:     start_input.Text,
 			End:       end_input.Text,
 			Rent:      money,
+			emisth:    selectedFileBytes,
 		}
 		// editedEntry.LandlordName = append(editedEntry.LandlordName, entriesMap["Εκμισθωτής"].Text)
 
@@ -476,6 +522,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		entriesMap["Στρέμματα"],
 		entriesMap["Είδος Καλ/γειας"],
 		entriesMap["Μίσθωμα"],
+		containerEmisth,
 		layout.NewSpacer(),
 		durationLabel,
 		startDateInput,
