@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"strconv"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	xwidget "fyne.io/x/fyne/widget"
@@ -1120,6 +1122,7 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> landlord: %v\n", owners)
 	var landlord OwnerDetails
+	var selectedFileBytes []byte
 
 	firstName := widget.NewEntry()
 	firstName.PlaceHolder = "Όνομα"
@@ -1137,7 +1140,23 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 	adt.PlaceHolder = "Α.Δ.Τ."
 
 	labelE9 := widget.NewLabel("E9")
-	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), nil)
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, AppState.window)
+				return
+			}
+		}, AppState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
+		dlg.Show()
+	})
 
 	notes := widget.NewEntry()
 
@@ -1169,7 +1188,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 		landlord.FathersName = fathersName.Text
 		landlord.AFM = uint(afm2Uint)
 		landlord.ADT = adt.Text
-		// E9 TODO
+		landlord.E9 = selectedFileBytes
 		landlord.Notes = notes.Text
 
 		log.Printf(">>> landlord struct: %v\n", landlord)
@@ -1188,6 +1207,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> renters: %v\n", renters)
 	var renter RenterDetails
+	var selectedFileBytes []byte
 
 	firstName := widget.NewEntry()
 	firstName.PlaceHolder = "Όνομα"
@@ -1205,7 +1225,23 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 	adt.PlaceHolder = "Α.Δ.Τ."
 
 	labelE9 := widget.NewLabel("E9")
-	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), nil)
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, AppState.window)
+				return
+			}
+		}, AppState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
+		dlg.Show()
+	})
 
 	notes := widget.NewEntry()
 
@@ -1237,6 +1273,7 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 		renter.FathersName = fathersName.Text
 		renter.AFM = uint(afmINT)
 		renter.ADT = adt.Text
+		renter.E9 = selectedFileBytes
 		renter.Notes = notes.Text
 
 		log.Printf(">>> renters struct: %v\n", renter)
