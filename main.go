@@ -52,6 +52,7 @@ func InitApp() (*AppState, error) {
 	log.Printf("Initializing the application...")
 	myApp := app.NewWithID("xyz.n00bady.edia")
 	myWindow := myApp.NewWindow("EDIA")
+	myWindow.SetMaster()
 
 	// This is deprecated will be removed for fyne v3.0
 	// Don't care!

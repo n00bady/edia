@@ -108,10 +108,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			}
 		}, appState.window)
 
-		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png"}))
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
 	})
-	containerEmisth := container.NewHBox(labelEmisth, buttonEmisth)
+	containerEmisth := container.NewVBox(labelEmisth, buttonEmisth)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -208,8 +208,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
-		rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenter, renterLabelsContainer)
+		// landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
+		// rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenter, renterLabelsContainer)
+		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
+		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -249,10 +251,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
 			entriesMap["Μίσθωμα"],
-			// entriesMap["Πλάτος 1"], entriesMap["Μήκος 1"],
-			// entriesMap["Πλάτος 2"], entriesMap["Μήκος 2"],
-			// entriesMap["Πλάτος 3"], entriesMap["Μήκος 3"],
-			// entriesMap["Πλάτος 4"], entriesMap["Μήκος 4"],
 		}
 
 		// Unfocuses to prevent tapping every single entry field when draging
@@ -270,8 +268,10 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	} else {
 		// --Desktop layout--
-		landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord, landLordsLabelsContainer)
-		rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter, renterLabelsContainer)
+		// landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord, landLordsLabelsContainer)
+		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
+		// rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter, renterLabelsContainer)
+		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
 
 		// LEFT
 		left_container := container.NewVBox(
@@ -422,7 +422,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png"}))
 		dlg.Show()
 	})
-	containerEmisth := container.NewHBox(labelEmisth, buttonEmisth)
+	containerEmisth := container.NewVBox(labelEmisth, buttonEmisth)
 
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
 		// Convert to float64 and gather the coordinates
@@ -503,8 +503,10 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		appState.window.SetContent(body)
 	})
 
-	landLordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
-	rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenters, rentersLabelContainer)
+	// landLordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
+	landLordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
+	// rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenters, rentersLabelContainer)
+	rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenters), rentersLabelContainer)
 
 	// LEFT
 	left_container := container.NewVBox(
@@ -1073,6 +1075,10 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 		rentersContainer.Add(widget.NewLabel("\t" + r.FirstName + " " + r.LastName))
 	}
 
+	misthButton := widget.NewButton("ΜΙΣΘΩΤΗΡΙΟ", func() {
+		openFile(entry, appState)
+	})
+
 	// Add all the details!
 	scrollableContainer := container.NewVScroll(
 		container.NewVBox(
@@ -1085,6 +1091,7 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 			widget.NewLabel(fmt.Sprintf("ΕΩΣ: %s", entry.End)),
 			widget.NewLabel(fmt.Sprintf("Είδος Καλ/γειας: %s", entry.Type)),
 			widget.NewLabel(fmt.Sprintf("Στρέμματα: %.3f", entry.Size)),
+			misthButton,
 			layout.NewSpacer(),
 			coordsContainer,
 		),
@@ -1134,7 +1141,6 @@ func showGeoLocForm(appState *AppState, entriesMap map[string]*widget.Entry) {
 	for i := range 4 {
 		coordContainer := container.NewGridWithColumns(2, entriesMap[fmt.Sprintf("Πλάτος %d", i+1)], entriesMap[fmt.Sprintf("Μήκος %d", i+1)])
 		content.Add(coordContainer)
-		content.Add(layout.NewSpacer())
 	}
 
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())

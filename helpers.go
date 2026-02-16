@@ -4,7 +4,16 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 )
 
 // Parses a string to d amount of decimals to float
@@ -70,4 +79,93 @@ func Contains(sl []string, str string) bool {
 	}
 
 	return false
+}
+
+func openFile(e Entry, appState *AppState) error {
+	if len(e.emisth) == 0 {
+		dialog.ShowInformation("Empty file", "No file data!", appState.window)
+		return nil
+	}
+
+	var guessedExt string
+
+	mimeType := http.DetectContentType(e.emisth)
+
+	extMap := map[string]string{
+		"image/jpeg":      ".jpg",
+		"image/png":       ".png",
+		"application/pdf": ".pdf",
+	}
+
+	if ext, ok := extMap[mimeType]; ok {
+		guessedExt = ext
+	} else {
+		dialog.ShowInformation("Unsupported file", "file type not supported", appState.window)
+		return nil
+	}
+
+	if fyne.CurrentDevice().IsMobile() {
+		storage := fyne.CurrentApp().Storage()
+
+		name := "temp-open-" + e.Name + guessedExt
+		writerCloser, err := storage.Create(name)
+		if err != nil {
+			return err
+		}
+		defer writerCloser.Close()
+
+		_, err = writerCloser.Write(e.emisth)
+		if err != nil {
+			return err
+		}
+
+		fURI := writerCloser.URI()
+		u, err := url.Parse(fURI.String())
+		if err != nil {
+			return err
+		}
+
+		time.AfterFunc(60*time.Second, func() {
+			_ = storage.Remove(name)
+		})
+
+		err = fyne.CurrentApp().OpenURL(u)
+		if err != nil {
+			dialog.ShowInformation("Failed to show the file", "File created but failed to open.", appState.window)
+			_ = storage.Remove(name)
+			return err
+		}
+
+		return nil
+	} else {
+		base := strings.TrimSuffix(filepath.Base(e.Name), guessedExt)
+		if base == "" {
+			base = "blobfile"
+		}
+		pattern := base + "-" + guessedExt
+		tmpFile, err := os.CreateTemp("", pattern)
+		if err != nil {
+			return fmt.Errorf("failed to create temp file: %v", err)
+		}
+
+		_, err = tmpFile.Write(e.emisth)
+		if err != nil {
+			return fmt.Errorf("failed to write temp file: %v", err)
+		}
+		tmpFile.Close()
+
+		fileURI := fmt.Sprintf("file://%s", filepath.ToSlash(tmpFile.Name()))
+		u, err := url.Parse(fileURI)
+		if err != nil {
+			return fmt.Errorf("cannot parse file URI: %v", err)
+		}
+		err = fyne.CurrentApp().OpenURL(u)
+		if err != nil {
+			msg := fmt.Sprintf("cannot open file: %s\nError: %v", tmpFile.Name(), err)
+			dialog.ShowInformation("Failed to open file", msg, appState.window)
+			return err
+		}
+	}
+
+	return nil
 }

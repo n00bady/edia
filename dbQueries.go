@@ -336,7 +336,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 	for rows.Next() {
 		var e Entry
 
-		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End)
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End, &e.emisth)
 		if err != nil {
 			return nil, err
 		}
