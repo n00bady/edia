@@ -25,7 +25,7 @@ func newEntryWithLabel(ph string) *widget.Entry {
 	return entry
 }
 
-func AddForm(appState *AppState) (fyne.CanvasObject, error) {
+func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
 	durationLabel := widget.NewLabel("Διαρκεια")
@@ -93,8 +93,8 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		showGeoLocForm(appState, entriesMap)
 	})
 
-	labelEmisth := widget.NewLabel("Μησθωτήριο")
-	buttonEmisth := widget.NewButtonWithIcon("Add Μησθωτήριο", theme.FileIcon(), func() {
+	// labelEmisth := widget.NewLabel("Μησθωτήριο")
+	buttonEmisth := widget.NewButtonWithIcon("Μησθωτήριο", theme.FileIcon(), func() {
 		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil || reader == nil {
 				return
@@ -111,7 +111,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
 	})
-	containerEmisth := container.NewVBox(labelEmisth, buttonEmisth)
+	// containerEmisth := container.NewVBox(labelEmisth, buttonEmisth)
 
 	// Save button
 	saveBtn := widget.NewButton("Αποθήκευση", func() {
@@ -187,7 +187,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 		dialog.ShowInformation("Database:", "Saved successfully!", appState.window)
 
 		// return to mainView
-		mainview, err := nameView(appState)
+		mainview, err := contractView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 			dialog.ShowError(err, appState.window)
@@ -197,7 +197,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	// Cancel button to go back
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := nameView(appState)
+		tmp, err := contractView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -208,8 +208,6 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		// landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
-		// rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenter, renterLabelsContainer)
 		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
 		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
 
@@ -226,8 +224,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["KAEK"],
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
-			entriesMap["Μίσθωμα"],
-			containerEmisth,
+			container.NewGridWithColumns(1, entriesMap["Μίσθωμα"], buttonEmisth),
 			layout.NewSpacer(),
 			durationLabel,
 			startDateInput,
@@ -268,9 +265,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	} else {
 		// --Desktop layout--
-		// landlordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord, landLordsLabelsContainer)
 		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
-		// rentersContainer := container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter, renterLabelsContainer)
 		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
 
 		// LEFT
@@ -288,8 +283,7 @@ func AddForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["KAEK"],
 			entriesMap["Στρέμματα"],
 			entriesMap["Είδος Καλ/γειας"],
-			entriesMap["Μίσθωμα"],
-			containerEmisth,
+			container.NewGridWithColumns(2, entriesMap["Μίσθωμα"], buttonEmisth),
 			layout.NewSpacer(),
 			durationLabel,
 			startDateInput,
@@ -495,7 +489,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	})
 
 	backButton := widget.NewButton("Cancel", func() {
-		tmp, err := nameView(appState)
+		tmp, err := contractView(appState)
 		if err != nil {
 			log.Printf("error constructing list layout: %v", err)
 		}
@@ -546,8 +540,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
-	listViewButton := widget.NewButton("Χωράφια", func() {
-		lView, err := nameView(appState)
+	listViewButton := widget.NewButton("Συμβόλαια", func() {
+		lView, err := contractView(appState)
 		if err != nil {
 			log.Printf("error constructing nameView: %v\n", err)
 			dialog.ShowError(err, appState.window)
@@ -588,28 +582,11 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	list := widget.NewList(
-		func() int {
-			return len(renters)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			if lii < 0 || lii >= len(renters) {
-				log.Printf("Invalid item ID: %d\n", lii)
-				return
-			}
-
-			renter := renters[lii]
-			label, ok := co.(*widget.Label)
-			if !ok {
-				log.Printf("Canvas object is not *widget.Label, it's: %s\n", fmt.Sprintf("%T", co))
-				return
-			}
-			label.SetText(fmt.Sprintf("%s", renter.FirstName+" "+renter.LastName))
-		},
-	)
+	items := make([]any, len(renters))
+	for i, s := range renters {
+		items[i] = s
+	}
+	list := buildList(items)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)
@@ -625,11 +602,10 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
-			if err != nil {
-				log.Printf("error constructing mobile layout: %v", err)
-			}
-			appState.window.SetContent(tmp)
+			addRenter(appState)
+			// this is the lazy way but I don't care
+			v, _ := rentersView(appState)
+			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -641,11 +617,9 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
-			if err != nil {
-				log.Printf("error constructing desktop layout: %v", err)
-			}
-			appState.window.SetContent(tmp)
+			addRenter(appState)
+			v, _ := rentersView(appState)
+			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -686,28 +660,11 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	list := widget.NewList(
-		func() int {
-			return len(landlords)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			if lii < 0 || lii >= len(landlords) {
-				log.Printf("Invalid item ID: %d\n", lii)
-				return
-			}
-
-			landlord := landlords[lii]
-			label, ok := co.(*widget.Label)
-			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: %s\n", fmt.Sprintf("%T", co))
-				return
-			}
-			label.SetText(fmt.Sprintf("%s", landlord.FirstName+" "+landlord.LastName))
-		},
-	)
+	items := make([]any, len(landlords))
+	for i, s := range landlords {
+		items[i] = s
+	}
+	list := buildList(items)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)
@@ -723,11 +680,9 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
-			if err != nil {
-				log.Printf("error constructing mobile layout: %v", err)
-			}
-			appState.window.SetContent(tmp)
+			addOwner(appState)
+			v, _ := ownersView(appState)
+			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -739,11 +694,9 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
-			if err != nil {
-				log.Printf("error constructing desktop layout: %v", err)
-			}
-			appState.window.SetContent(tmp)
+			addOwner(appState)
+			v, _ := ownersView(appState)
+			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -776,8 +729,8 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-func nameView(appState *AppState) (fyne.CanvasObject, error) {
-	log.Printf("Creating the listView...")
+func contractView(appState *AppState) (fyne.CanvasObject, error) {
+	log.Printf("Creating the contractView...")
 	entries, err := getAllEntries(appState.db)
 	if err != nil {
 		return nil, err
@@ -820,7 +773,7 @@ func nameView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
+			tmp, err := addForm(appState)
 			if err != nil {
 				log.Printf("error constructing mobile layout: %v", err)
 			}
@@ -836,7 +789,7 @@ func nameView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			tmp, err := AddForm(appState)
+			tmp, err := addForm(appState)
 			if err != nil {
 				log.Printf("error constructing desktop layout: %v", err)
 			}
@@ -869,7 +822,7 @@ func nameView(appState *AppState) (fyne.CanvasObject, error) {
 		),
 	)
 
-	log.Printf("mainView created successfully!")
+	log.Printf("contractView created successfully!")
 
 	return body, nil
 }
@@ -1340,4 +1293,225 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 
 	popup.Resize(fyne.NewSize(300, 500))
 	popup.Show()
+}
+
+func addRenter(appState *AppState) error {
+	var renter RenterDetails
+	var selectedFileBytes []byte
+
+	entryList, err := getAllEntries(appState.db)
+	if err != nil {
+		return err
+	}
+
+	var opts []string
+	for _, e := range entryList {
+		opts = append(opts, e.Name) // Need to make sure they have unique names...
+	}
+
+	contractSelect := widget.NewSelectEntry(opts)
+	contractSelect.PlaceHolder = "Επιλoγή Συμβόλαιου"
+
+	firstName := widget.NewEntry()
+	firstName.PlaceHolder = "Όνομα"
+
+	lastName := widget.NewEntry()
+	lastName.PlaceHolder = "Επώνυμο"
+
+	fathersName := widget.NewEntry()
+	fathersName.PlaceHolder = "Όνομα Πατρός"
+
+	afm := widget.NewEntry() // ΑΦΜ
+	afm.PlaceHolder = "Α.Φ.Μ."
+
+	adt := widget.NewEntry() // ΑΔΤ
+	adt.PlaceHolder = "Α.Δ.Τ."
+
+	labelE9 := widget.NewLabel("E9")
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, appState.window)
+				return
+			}
+		}, appState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
+		dlg.Show()
+	})
+
+	notes := widget.NewEntry()
+
+	cancelButton := widget.NewButton("Cancel", nil)
+	saveButton := widget.NewButton("Save", nil)
+
+	containerE9 := container.NewHBox(labelE9, buttonE9)
+	buttonContainer := container.NewHBox(cancelButton, saveButton)
+	content := container.NewVBox(contractSelect, firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+
+	cancelButton.OnTapped = func() {
+		popup.Hide()
+	}
+
+	saveButton.OnTapped = func() {
+		var selectedEntry Entry
+		for _, e := range entryList {
+			if e.Name == contractSelect.Text {
+				selectedEntry = e
+			} else {
+				dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+			}
+		}
+
+		log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
+		if firstName.Text == "" || lastName.Text == "" {
+			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+		}
+		afmINT, err := strconv.ParseUint(afm.Text, 10, 0)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+		}
+
+		renter.FirstName = firstName.Text
+		renter.LastName = lastName.Text
+		renter.FathersName = fathersName.Text
+		renter.AFM = uint(afmINT)
+		renter.ADT = adt.Text
+		renter.E9 = selectedFileBytes
+		renter.Notes = notes.Text
+
+		// TODO: check if it exists already?
+		selectedEntry.Renters = append(selectedEntry.Renters, renter)
+
+		err = updateEntry(appState.db, selectedEntry)
+		if err != nil {
+			dialog.ShowInformation("Error", "Cannot update entry with the new Renter.", appState.window)
+		}
+
+		log.Println("Updated entry successfully!")
+		popup.Hide()
+	}
+
+	popup.Resize(fyne.NewSize(300, 500))
+	popup.Show()
+
+	return nil
+}
+
+func addOwner(appState *AppState) error {
+	var landlord OwnerDetails
+	var selectedFileBytes []byte
+
+	entryList, err := getAllEntries(appState.db)
+	if err != nil {
+		return err
+	}
+
+	var opts []string
+	for _, e := range entryList {
+		opts = append(opts, e.Name)
+	}
+
+	contractSelect := widget.NewSelectEntry(opts)
+	contractSelect.PlaceHolder = "Επιλογή Συμβολαίου"
+
+	firstName := widget.NewEntry()
+	firstName.PlaceHolder = "Όνομα"
+
+	lastName := widget.NewEntry()
+	lastName.PlaceHolder = "Επώνυμο"
+
+	fathersName := widget.NewEntry()
+	fathersName.PlaceHolder = "Όνομα Πατρός"
+
+	afm := widget.NewEntry() // ΑΦΜ
+	afm.PlaceHolder = "Α.Φ.Μ."
+
+	adt := widget.NewEntry() // ΑΔΤ
+	adt.PlaceHolder = "Α.Δ.Τ."
+
+	labelE9 := widget.NewLabel("E9")
+	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
+		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			defer reader.Close()
+
+			selectedFileBytes, err = io.ReadAll(reader)
+			if err != nil {
+				dialog.ShowError(err, appState.window)
+				return
+			}
+		}, appState.window)
+
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
+		dlg.Show()
+	})
+
+	notes := widget.NewEntry()
+
+	cancelButton := widget.NewButton("Cancel", nil)
+	saveButton := widget.NewButton("Save", nil)
+
+	containerE9 := container.NewHBox(labelE9, buttonE9)
+	buttonContainer := container.NewHBox(cancelButton, saveButton)
+	content := container.NewVBox(contractSelect, firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
+
+	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+
+	cancelButton.OnTapped = func() {
+		popup.Hide()
+	}
+
+	saveButton.OnTapped = func() {
+		var selectedEntry Entry
+		for _, e := range entryList {
+			if e.Name == contractSelect.Text {
+				selectedEntry = e
+			} else {
+				dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+			}
+		}
+
+		log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
+		if firstName.Text == "" || lastName.Text == "" {
+			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+		}
+		afm2Uint, err := strconv.ParseUint(afm.Text, 10, 0)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+		}
+
+		landlord.FirstName = firstName.Text
+		landlord.LastName = lastName.Text
+		landlord.FathersName = fathersName.Text
+		landlord.AFM = uint(afm2Uint)
+		landlord.ADT = adt.Text
+		landlord.E9 = selectedFileBytes
+		landlord.Notes = notes.Text
+
+		selectedEntry.Owners = append(selectedEntry.Owners, landlord)
+
+		err = updateEntry(appState.db, selectedEntry)
+		if err != nil {
+			dialog.ShowInformation("Error", "Cannot update entry with the new Owner.", appState.window)
+		}
+
+		log.Println("Updated entry successfully!")
+		popup.Hide()
+	}
+
+	popup.Resize(fyne.NewSize(300, 500))
+	popup.Show()
+
+	return nil
 }

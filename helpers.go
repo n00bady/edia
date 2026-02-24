@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 // Parses a string to d amount of decimals to float
@@ -168,4 +169,36 @@ func openFile(e Entry, appState *AppState) error {
 	}
 
 	return nil
+}
+
+func buildList(data []any) *widget.List {
+	list := widget.NewList(
+		func() int {
+			return len(data)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			if lii < 0 || lii >= len(data) {
+				return
+			}
+			label, ok := co.(*widget.Label)
+			if !ok {
+				log.Println("CanvasObject is not *widget.Label! It's: %s\n)", fmt.Sprintf("%T", co))
+				return
+			}
+
+			switch t := data[lii].(type) {
+			case RenterDetails:
+				label.SetText(fmt.Sprintf("%s", t.FirstName+" "+t.LastName))
+			case OwnerDetails:
+				label.SetText(fmt.Sprintf("%s", t.FirstName+" "+t.LastName))
+			default:
+				log.Println("Unknown type.")
+			}
+		},
+	)
+
+	return list
 }
