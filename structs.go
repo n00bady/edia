@@ -43,14 +43,18 @@ type Coordinates struct {
 
 // Εκμισθωτές
 type OwnerDetails struct {
-	ID          uint
-	FirstName   string
-	LastName    string
-	FathersName string
-	AFM         uint
-	ADT         string
-	E9          []byte
-	Notes       string
+	ID             uint
+	FirstName      string
+	LastName       string
+	FathersName    string
+	AFM            uint
+	ADT            string
+	E9             []byte
+	HomeAddress    string
+	PhoneNumber    string
+	Email          string
+	AccountantInfo string
+	Notes          string
 }
 
 // Μισθωτές

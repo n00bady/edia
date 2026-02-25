@@ -72,6 +72,10 @@ func initDB(dbPath string) (*sql.DB, error) {
 			afm INTEGER,
 			adt TEXT,
 			e9 BLOB,
+			homeAddress	TEXT,
+			phoneNumber	TEXT,
+			email	TEXT,
+			accountantInfo	TEXT,
 			notes TEXT
 		);
 	`
@@ -211,9 +215,9 @@ func getOrCreateOwner(tx *sql.Tx, o OwnerDetails) (int64, error) {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, e9, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.E9, o.Notes)
+		INSERT INTO ownerDetails (firstName, lastName, fathersName, afm, adt, e9, homeAddress, phoneNumber, email, accountantInfo, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.E9, o.HomeAddress, o.PhoneNumber, o.Email, o.AccountantInfo, o.Notes)
 	if err != nil {
 		return 0, err
 	}
@@ -343,7 +347,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 
 		// get the owners for the entry
 		ownerRows, err := db.Query(`
-			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.notes 
+			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes 
 			FROM ownerDetails o
 			JOIN entries_owner eo ON o.id = eo.owner_id
 			WHERE eo.entry_id = ?`,
@@ -355,7 +359,7 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 		for ownerRows.Next() {
 			var o OwnerDetails
 
-			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
+			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
 			if err != nil {
 				ownerRows.Close()
 				return nil, err
@@ -454,7 +458,7 @@ func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
 	var owners []OwnerDetails
 
 	rows, err := db.Query(`
-		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.notes
+		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes
 		FROM ownerDetails o
 		JOIN entries_owner eo ON o.id = eo.owner_id
 		WHERE eo.entry_id = ?`,
@@ -467,7 +471,7 @@ func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
 	for rows.Next() {
 		var o OwnerDetails
 
-		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
 		if err != nil {
 			return owners, err
 		}
@@ -582,7 +586,7 @@ func getAllOwners(db *sql.DB) ([]OwnerDetails, error) {
 	for rows.Next() {
 		var o OwnerDetails
 
-		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.Notes)
+		err := rows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
 		if err != nil {
 			return owners, err
 		}

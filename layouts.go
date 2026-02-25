@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"io"
 	"log"
 	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/mobile"
@@ -540,6 +542,12 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
+	bgImg := canvas.NewImageFromResource(resourceBackgroundJpg)
+	bgImg.FillMode = canvas.ImageFillCover
+	bgImg.ScaleMode = canvas.ImageScaleFastest
+
+	overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
+
 	listViewButton := widget.NewButton("Συμβόλαια", func() {
 		lView, err := contractView(appState)
 		if err != nil {
@@ -547,7 +555,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			dialog.ShowError(err, appState.window)
 		}
 
-		appState.window.SetContent(lView)
+		appState.window.SetContent(container.NewStack(bgImg, overlay, lView))
 	})
 
 	landLordButton := widget.NewButton("Ιδιοκτήτες", func() {
@@ -557,7 +565,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			dialog.ShowError(err, appState.window)
 		}
 
-		appState.window.SetContent(view)
+		appState.window.SetContent(container.NewStack(bgImg, overlay, view))
 	})
 
 	renterButton := widget.NewButton("Μισθωτές", func() {
@@ -566,10 +574,13 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("error constructing renterView: %v\n", err)
 		}
 
-		appState.window.SetContent(view)
+		appState.window.SetContent(container.NewStack(bgImg, overlay, view))
 	})
 
-	body := container.New(layout.NewCenterLayout(), container.NewVBox(listViewButton, landLordButton, renterButton))
+	buttons := container.NewVBox(listViewButton, landLordButton, renterButton)
+	buttonContainer := container.NewCenter(buttons)
+	content := container.NewBorder(nil, nil, nil, nil, buttonContainer)
+	body := container.NewStack(bgImg, content)
 
 	return body, nil
 }
@@ -603,9 +614,6 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 			addRenter(appState)
-			// this is the lazy way but I don't care
-			v, _ := rentersView(appState)
-			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -618,8 +626,6 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
 			addRenter(appState)
-			v, _ := rentersView(appState)
-			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -653,7 +659,7 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 }
 
 func ownersView(appState *AppState) (fyne.CanvasObject, error) {
-	log.Println("Creating the landlordView...")
+	log.Println("Creating the ownerView...")
 	landlords, err := getAllOwners(appState.db)
 	log.Printf("query Results: %v\n", landlords)
 	if err != nil {
@@ -681,8 +687,6 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 			addOwner(appState)
-			v, _ := ownersView(appState)
-			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -695,8 +699,6 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
 			addOwner(appState)
-			v, _ := ownersView(appState)
-			appState.window.SetContent(v)
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -1127,7 +1129,7 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 
 func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> landlord: %v\n", owners)
-	var landlord OwnerDetails
+	var owner OwnerDetails
 	var selectedFileBytes []byte
 
 	firstName := widget.NewEntry()
@@ -1164,6 +1166,18 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 		dlg.Show()
 	})
 
+	homeAdress := widget.NewEntry()
+	homeAdress.PlaceHolder = "Διεύθυνση"
+
+	phoneNum := widget.NewEntry()
+	phoneNum.PlaceHolder = "Τηλέφωνο"
+
+	email := widget.NewEntry()
+	email.PlaceHolder = "e-mail"
+
+	accountInfo := widget.NewEntry()
+	accountInfo.PlaceHolder = "Στοιχέια Λογιστή"
+
 	notes := widget.NewEntry()
 
 	cancelButton := widget.NewButton("Cancel", nil)
@@ -1171,7 +1185,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 
 	containerE9 := container.NewHBox(labelE9, buttonE9)
 	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
+	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, homeAdress, phoneNum, email, accountInfo, notes, buttonContainer)
 
 	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
 
@@ -1189,19 +1203,23 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), AppState.window)
 		}
 
-		landlord.FirstName = firstName.Text
-		landlord.LastName = lastName.Text
-		landlord.FathersName = fathersName.Text
-		landlord.AFM = uint(afm2Uint)
-		landlord.ADT = adt.Text
-		landlord.E9 = selectedFileBytes
-		landlord.Notes = notes.Text
+		owner.FirstName = firstName.Text
+		owner.LastName = lastName.Text
+		owner.FathersName = fathersName.Text
+		owner.AFM = uint(afm2Uint)
+		owner.ADT = adt.Text
+		owner.E9 = selectedFileBytes
+		owner.HomeAddress = homeAdress.Text
+		owner.PhoneNumber = phoneNum.Text
+		owner.Email = email.Text
+		owner.AccountantInfo = accountInfo.Text
+		owner.Notes = notes.Text
 
-		log.Printf(">>> landlord struct: %v\n", landlord)
-		*owners = append(*owners, landlord)
-		labelContainer.Add(widget.NewLabel(landlord.FirstName + " " + landlord.LastName))
+		log.Printf(">>> landlord struct: %v\n", owner)
+		*owners = append(*owners, owner)
+		labelContainer.Add(widget.NewLabel(owner.FirstName + " " + owner.LastName))
 
-		onSave(landlord.FirstName + " " + landlord.LastName)
+		onSave(owner.FirstName + " " + owner.LastName)
 
 		popup.Hide()
 	}
@@ -1299,6 +1317,13 @@ func addRenter(appState *AppState) error {
 	var renter RenterDetails
 	var selectedFileBytes []byte
 
+	inviSpacer := func(height float32) fyne.CanvasObject {
+		spacer := canvas.NewRectangle(color.Transparent)
+		spacer.SetMinSize(fyne.NewSize(1, height))
+
+		return spacer
+	}
+
 	entryList, err := getAllEntries(appState.db)
 	if err != nil {
 		return err
@@ -1348,67 +1373,91 @@ func addRenter(appState *AppState) error {
 
 	notes := widget.NewEntry()
 
-	cancelButton := widget.NewButton("Cancel", nil)
-	saveButton := widget.NewButton("Save", nil)
-
 	containerE9 := container.NewHBox(labelE9, buttonE9)
-	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(contractSelect, firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
 
-	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+	form := container.NewPadded(container.NewVBox(
+		inviSpacer(10),
+		contractSelect,
+		inviSpacer(14),
+		firstName,
+		inviSpacer(14),
+		lastName,
+		inviSpacer(14),
+		fathersName,
+		inviSpacer(14),
+		afm,
+		inviSpacer(14),
+		adt,
+		inviSpacer(14),
+		containerE9,
+		inviSpacer(14),
+		notes,
+		inviSpacer(10),
+	))
+	scrolledForm := container.NewVScroll(form)
+	scrolledForm.SetMinSize(fyne.NewSize(400, 300))
 
-	cancelButton.OnTapped = func() {
-		popup.Hide()
-	}
+	d := dialog.NewCustomConfirm("Στοιχεία Μησθωτή", "Save", "Cancel", scrolledForm,
+		func(ok bool) {
+			if ok {
+				var selectedEntry Entry
+				for _, e := range entryList {
+					if e.Name == contractSelect.Text {
+						selectedEntry = e
+					} else {
+						dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+					}
+				}
 
-	saveButton.OnTapped = func() {
-		var selectedEntry Entry
-		for _, e := range entryList {
-			if e.Name == contractSelect.Text {
-				selectedEntry = e
+				log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
+				if firstName.Text == "" || lastName.Text == "" {
+					dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+				}
+				afmINT, err := strconv.ParseUint(afm.Text, 10, 0)
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+				}
+
+				renter.FirstName = firstName.Text
+				renter.LastName = lastName.Text
+				renter.FathersName = fathersName.Text
+				renter.AFM = uint(afmINT)
+				renter.ADT = adt.Text
+				renter.E9 = selectedFileBytes
+				renter.Notes = notes.Text
+
+				// TODO: check if it exists already?
+				selectedEntry.Renters = append(selectedEntry.Renters, renter)
+
+				err = updateEntry(appState.db, selectedEntry)
+				if err != nil {
+					dialog.ShowInformation("Error", "Cannot update entry with the new Renter.", appState.window)
+				}
+
+				log.Println("Updated entry successfully!")
+
 			} else {
-				dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+				log.Println("User probably clicked cancel.")
+				return
 			}
-		}
+		}, appState.window)
 
-		log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
-		if firstName.Text == "" || lastName.Text == "" {
-			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
-		}
-		afmINT, err := strconv.ParseUint(afm.Text, 10, 0)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
-		}
-
-		renter.FirstName = firstName.Text
-		renter.LastName = lastName.Text
-		renter.FathersName = fathersName.Text
-		renter.AFM = uint(afmINT)
-		renter.ADT = adt.Text
-		renter.E9 = selectedFileBytes
-		renter.Notes = notes.Text
-
-		// TODO: check if it exists already?
-		selectedEntry.Renters = append(selectedEntry.Renters, renter)
-
-		err = updateEntry(appState.db, selectedEntry)
-		if err != nil {
-			dialog.ShowInformation("Error", "Cannot update entry with the new Renter.", appState.window)
-		}
-
-		log.Println("Updated entry successfully!")
-		popup.Hide()
-	}
-
-	popup.Resize(fyne.NewSize(300, 500))
-	popup.Show()
+	d.Resize(fyne.NewSize(400, 600))
+	d.Show()
 
 	return nil
 }
 
 func addOwner(appState *AppState) error {
-	var landlord OwnerDetails
+	var owner OwnerDetails
 	var selectedFileBytes []byte
+
+	inviSpacer := func(height float32) fyne.CanvasObject {
+		spacer := canvas.NewRectangle(color.Transparent)
+		spacer.SetMinSize(fyne.NewSize(1, height))
+
+		return spacer
+	}
 
 	entryList, err := getAllEntries(appState.db)
 	if err != nil {
@@ -1457,61 +1506,100 @@ func addOwner(appState *AppState) error {
 		dlg.Show()
 	})
 
+	homeAdress := widget.NewEntry()
+	homeAdress.PlaceHolder = "Διεύθυνση"
+
+	phoneNum := widget.NewEntry()
+	phoneNum.PlaceHolder = "Τηλέφωνο"
+
+	email := widget.NewEntry()
+	email.PlaceHolder = "e-mail"
+
+	accountInfo := widget.NewEntry()
+	accountInfo.PlaceHolder = "Στοιχέια Λογιστή"
+
 	notes := widget.NewEntry()
 
-	cancelButton := widget.NewButton("Cancel", nil)
-	saveButton := widget.NewButton("Save", nil)
-
 	containerE9 := container.NewHBox(labelE9, buttonE9)
-	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(contractSelect, firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
 
-	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+	form := container.NewPadded(container.NewVBox(
+		inviSpacer(10),
+		contractSelect,
+		inviSpacer(14),
+		firstName,
+		inviSpacer(14),
+		lastName,
+		inviSpacer(14),
+		fathersName,
+		inviSpacer(14),
+		afm,
+		inviSpacer(14),
+		adt,
+		inviSpacer(14),
+		containerE9,
+		inviSpacer(14),
+		homeAdress,
+		inviSpacer(14),
+		phoneNum,
+		inviSpacer(14),
+		email,
+		inviSpacer(14),
+		accountInfo,
+		inviSpacer(14),
+		notes,
+		inviSpacer(10),
+	))
+	scrolledForm := container.NewVScroll(form)
+	scrolledForm.SetMinSize(fyne.NewSize(400, 300))
 
-	cancelButton.OnTapped = func() {
-		popup.Hide()
-	}
-
-	saveButton.OnTapped = func() {
-		var selectedEntry Entry
-		for _, e := range entryList {
-			if e.Name == contractSelect.Text {
-				selectedEntry = e
-			} else {
-				dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+	d := dialog.NewCustomConfirm("Enter Owner Details", "Save", "Cancel", scrolledForm, func(ok bool) {
+		if ok {
+			var selectedEntry Entry
+			for _, e := range entryList {
+				if e.Name == contractSelect.Text {
+					selectedEntry = e
+				} else {
+					dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+				}
 			}
+
+			log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
+			if firstName.Text == "" || lastName.Text == "" {
+				dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+			}
+			afm2Uint, err := strconv.ParseUint(afm.Text, 10, 0)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+			}
+
+			owner.FirstName = firstName.Text
+			owner.LastName = lastName.Text
+			owner.FathersName = fathersName.Text
+			owner.AFM = uint(afm2Uint)
+			owner.ADT = adt.Text
+			owner.E9 = selectedFileBytes
+			owner.HomeAddress = homeAdress.Text
+			owner.PhoneNumber = phoneNum.Text
+			owner.Email = email.Text
+			owner.AccountantInfo = accountInfo.Text
+			owner.Notes = notes.Text
+
+			selectedEntry.Owners = append(selectedEntry.Owners, owner)
+
+			err = updateEntry(appState.db, selectedEntry)
+			if err != nil {
+				dialog.ShowInformation("Error", "Cannot update entry with the new Owner.", appState.window)
+			}
+
+			log.Println("Updated entry successfully!")
+		} else {
+			log.Println("User probably clicked cancel.")
+			return
 		}
+	}, appState.window)
 
-		log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
-		if firstName.Text == "" || lastName.Text == "" {
-			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
-		}
-		afm2Uint, err := strconv.ParseUint(afm.Text, 10, 0)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
-		}
-
-		landlord.FirstName = firstName.Text
-		landlord.LastName = lastName.Text
-		landlord.FathersName = fathersName.Text
-		landlord.AFM = uint(afm2Uint)
-		landlord.ADT = adt.Text
-		landlord.E9 = selectedFileBytes
-		landlord.Notes = notes.Text
-
-		selectedEntry.Owners = append(selectedEntry.Owners, landlord)
-
-		err = updateEntry(appState.db, selectedEntry)
-		if err != nil {
-			dialog.ShowInformation("Error", "Cannot update entry with the new Owner.", appState.window)
-		}
-
-		log.Println("Updated entry successfully!")
-		popup.Hide()
-	}
-
-	popup.Resize(fyne.NewSize(300, 500))
-	popup.Show()
+	d.Resize(fyne.NewSize(400, 600))
+	d.Show()
 
 	return nil
 }
