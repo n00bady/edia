@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -201,4 +202,26 @@ func buildList(data []any) *widget.List {
 	)
 
 	return list
+}
+
+func newEntryWithLabel(ph string) *widget.Entry {
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder(ph)
+
+	return entry
+}
+
+func NewFilteredEntry(pattern string, placeholder string) *widget.Entry {
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder(placeholder)
+	regex := regexp.MustCompile(pattern)
+
+	entry.OnChanged = func(s string) {
+		filtered := regex.ReplaceAllString(s, "")
+		if filtered != s {
+			entry.SetText(filtered)
+		}
+	}
+
+	return entry
 }

@@ -13,6 +13,7 @@ type AppState struct {
 	db     *sql.DB
 	app    fyne.App
 	window fyne.Window
+	bg     fyne.CanvasObject
 }
 
 // Main struct/table

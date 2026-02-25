@@ -3,11 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"image/color"
 	"log"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -55,6 +58,12 @@ func InitApp() (*AppState, error) {
 	myWindow.SetPadded(false)
 	myWindow.SetMaster()
 
+	bgImg := canvas.NewImageFromResource(resourceBackgroundJpg)
+	bgImg.FillMode = canvas.ImageFillCover
+	bgImg.ScaleMode = canvas.ImageScaleFastest
+	overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
+	background := container.NewStack(bgImg, overlay)
+
 	// This is deprecated will be removed for fyne v3.0
 	// Don't care!
 	myApp.Settings().SetTheme(&MyTheme{base: theme.DarkTheme()})
@@ -84,5 +93,6 @@ func InitApp() (*AppState, error) {
 		db:     db,
 		app:    myApp,
 		window: myWindow,
+		bg:     background,
 	}, nil
 }

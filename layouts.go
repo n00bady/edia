@@ -20,13 +20,6 @@ import (
 	xwidget "fyne.io/x/fyne/widget"
 )
 
-func newEntryWithLabel(ph string) *widget.Entry {
-	entry := widget.NewEntry()
-	entry.SetPlaceHolder(ph)
-
-	return entry
-}
-
 func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	entriesMap := make(map[string]*widget.Entry)
 
@@ -36,9 +29,9 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	var renters []RenterDetails
 	var selectedFileBytes []byte
 
+	// TODO: Maybe I should remove the entriesMap so I can use NumericalEntry for some
 	labelsEntries := []string{
 		"Όνομα Εγγραφής",
-		"Μισθωτής",
 		"ATAK",
 		"KAEK",
 		"Στρέμματα",
@@ -46,15 +39,23 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 		"Μίσθωμα",
 	}
 
-	for _, l := range labelsEntries {
-		tmpEnt := newEntryWithLabel(l)
-		entriesMap[l] = tmpEnt
+	for i, l := range labelsEntries {
+		switch i {
+		case 1, 2:
+			entriesMap[l] = NewFilteredEntry(`[^0-9]`, l)
+		case 4:
+			entriesMap[l] = newEntryWithLabel(l)
+		case 3, 5:
+			entriesMap[l] = NewFilteredEntry(`[^0-9.]`, l)
+		default:
+			entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+		}
 	}
 
 	for i := range 4 {
-		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
+		lat := NewFilteredEntry(`[^0-9.]`, fmt.Sprintf("Πλάτος %d", i+1))
 		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
-		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
+		long := NewFilteredEntry(`[^0-9.]`, fmt.Sprintf("Μήκος %d", i+1))
 		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
 	}
 
@@ -95,7 +96,6 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 		showGeoLocForm(appState, entriesMap)
 	})
 
-	// labelEmisth := widget.NewLabel("Μησθωτήριο")
 	buttonEmisth := widget.NewButtonWithIcon("Μησθωτήριο", theme.FileIcon(), func() {
 		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil || reader == nil {
@@ -204,7 +204,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("error constructing list layout: %v", err)
 		}
 		body := container.NewBorder(nil, nil, nil, nil, tmp)
-		appState.window.SetContent(body)
+		appState.window.SetContent(container.NewStack(appState.bg, body))
 	})
 
 	// --Different Layouts for Mobile and Desktop--
@@ -334,9 +334,17 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 		"Μίσθωμα",
 	}
 
-	for _, l := range labelsEntries {
-		tmpEnt := newEntryWithLabel(l)
-		entriesMap[l] = tmpEnt
+	for i, l := range labelsEntries {
+		switch i {
+		case 1, 2:
+			entriesMap[l] = NewFilteredEntry(`[^0-9]`, l)
+		case 4:
+			entriesMap[l] = newEntryWithLabel(l)
+		case 3, 5:
+			entriesMap[l] = NewFilteredEntry(`[^0-9.]`, l)
+		default:
+			entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+		}
 	}
 
 	// Assign values to entries from the selected Entry
@@ -348,11 +356,11 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	entriesMap["Μίσθωμα"].SetText(strconv.FormatFloat(selectedEntry.Rent, 'f', -1, 64))
 
 	for i := range 4 {
-		lat := newEntryWithLabel(fmt.Sprintf("Πλάτος %d", i+1))
+		lat := NewFilteredEntry(`[^0-9.]`, fmt.Sprintf("Πλάτος %d", i+1))
 		lat.SetText(strconv.FormatFloat(selectedEntry.Coords[i].Latitude, 'f', -1, 64))
 		entriesMap[fmt.Sprintf("Πλάτος %d", i+1)] = lat
 
-		long := newEntryWithLabel(fmt.Sprintf("Μήκος %d", i+1))
+		long := NewFilteredEntry(`[^0-9.]`, fmt.Sprintf("Μήκος %d", i+1))
 		long.SetText(strconv.FormatFloat(selectedEntry.Coords[i].Longitude, 'f', -1, 64))
 		entriesMap[fmt.Sprintf("Μήκος %d", i+1)] = long
 	}
@@ -415,7 +423,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			}
 		}, appState.window)
 
-		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png"}))
+		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
 	})
 	containerEmisth := container.NewVBox(labelEmisth, buttonEmisth)
@@ -542,11 +550,11 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
-	bgImg := canvas.NewImageFromResource(resourceBackgroundJpg)
-	bgImg.FillMode = canvas.ImageFillCover
-	bgImg.ScaleMode = canvas.ImageScaleFastest
-
-	overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
+	// bgImg := canvas.NewImageFromResource(resourceBackgroundJpg)
+	// bgImg.FillMode = canvas.ImageFillCover
+	// bgImg.ScaleMode = canvas.ImageScaleFastest
+	//
+	// overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
 
 	listViewButton := widget.NewButton("Συμβόλαια", func() {
 		lView, err := contractView(appState)
@@ -555,7 +563,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			dialog.ShowError(err, appState.window)
 		}
 
-		appState.window.SetContent(container.NewStack(bgImg, overlay, lView))
+		appState.window.SetContent(container.NewStack(appState.bg, lView))
 	})
 
 	landLordButton := widget.NewButton("Ιδιοκτήτες", func() {
@@ -565,7 +573,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			dialog.ShowError(err, appState.window)
 		}
 
-		appState.window.SetContent(container.NewStack(bgImg, overlay, view))
+		appState.window.SetContent(container.NewStack(appState.bg, view))
 	})
 
 	renterButton := widget.NewButton("Μισθωτές", func() {
@@ -574,13 +582,13 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("error constructing renterView: %v\n", err)
 		}
 
-		appState.window.SetContent(container.NewStack(bgImg, overlay, view))
+		appState.window.SetContent(container.NewStack(appState.bg, view))
 	})
 
 	buttons := container.NewVBox(listViewButton, landLordButton, renterButton)
 	buttonContainer := container.NewCenter(buttons)
 	content := container.NewBorder(nil, nil, nil, nil, buttonContainer)
-	body := container.NewStack(bgImg, content)
+	body := container.NewStack(appState.bg, content)
 
 	return body, nil
 }
@@ -779,7 +787,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil {
 				log.Printf("error constructing mobile layout: %v", err)
 			}
-			appState.window.SetContent(tmp)
+			appState.window.SetContent(container.NewStack(appState.bg, tmp))
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -787,7 +795,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil {
 				log.Printf("error constructing main layout: %v", err)
 			}
-			appState.window.SetContent(tmp)
+			appState.window.SetContent(container.NewStack(appState.bg, tmp))
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
@@ -795,7 +803,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil {
 				log.Printf("error constructing desktop layout: %v", err)
 			}
-			appState.window.SetContent(tmp)
+			appState.window.SetContent(container.NewStack(appState.bg, tmp))
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -803,7 +811,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil {
 				log.Printf("error constructing main layout: %v", err)
 			}
-			appState.window.SetContent(tmp)
+			appState.window.SetContent(container.NewStack(appState.bg, tmp))
 		})
 	}
 	addButton.Resize(fyne.NewSize(200, 200))
@@ -1127,10 +1135,17 @@ func showCalendar(entry *widget.Entry, window fyne.Window) {
 	popup.Show()
 }
 
-func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
+func showOwnerEntriesPopup(appState *AppState, owners *[]OwnerDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> landlord: %v\n", owners)
 	var owner OwnerDetails
 	var selectedFileBytes []byte
+
+	inviSpacer := func(height float32) fyne.CanvasObject {
+		spacer := canvas.NewRectangle(color.Transparent)
+		spacer.SetMinSize(fyne.NewSize(1, height))
+
+		return spacer
+	}
 
 	firstName := widget.NewEntry()
 	firstName.PlaceHolder = "Όνομα"
@@ -1141,7 +1156,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 	fathersName := widget.NewEntry()
 	fathersName.PlaceHolder = "Όνομα Πατρός"
 
-	afm := widget.NewEntry() // ΑΦΜ
+	afm := xwidget.NewNumericalEntry() // ΑΦΜ
 	afm.PlaceHolder = "Α.Φ.Μ."
 
 	adt := widget.NewEntry() // ΑΔΤ
@@ -1157,10 +1172,10 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
-				dialog.ShowError(err, AppState.window)
+				dialog.ShowError(err, appState.window)
 				return
 			}
-		}, AppState.window)
+		}, appState.window)
 
 		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
@@ -1169,7 +1184,7 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 	homeAdress := widget.NewEntry()
 	homeAdress.PlaceHolder = "Διεύθυνση"
 
-	phoneNum := widget.NewEntry()
+	phoneNum := xwidget.NewNumericalEntry()
 	phoneNum.PlaceHolder = "Τηλέφωνο"
 
 	email := widget.NewEntry()
@@ -1180,58 +1195,84 @@ func showOwnerEntriesPopup(AppState *AppState, owners *[]OwnerDetails, labelCont
 
 	notes := widget.NewEntry()
 
-	cancelButton := widget.NewButton("Cancel", nil)
-	saveButton := widget.NewButton("Save", nil)
-
 	containerE9 := container.NewHBox(labelE9, buttonE9)
-	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, homeAdress, phoneNum, email, accountInfo, notes, buttonContainer)
 
-	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
+	form := container.NewPadded(container.NewVBox(
+		inviSpacer(10),
+		firstName,
+		inviSpacer(14),
+		lastName,
+		inviSpacer(14),
+		fathersName,
+		inviSpacer(14),
+		afm,
+		inviSpacer(14),
+		adt,
+		inviSpacer(14),
+		containerE9,
+		inviSpacer(14),
+		homeAdress,
+		inviSpacer(14),
+		phoneNum,
+		inviSpacer(14),
+		email,
+		inviSpacer(14),
+		accountInfo,
+		inviSpacer(14),
+		notes,
+		inviSpacer(10),
+	))
+	scrolledForm := container.NewVScroll(form)
+	scrolledForm.SetMinSize(fyne.NewSize(400, 300))
 
-	cancelButton.OnTapped = func() {
-		popup.Hide()
-	}
+	d := dialog.NewCustomConfirm("Enter Owner Details", "Save", "Cancel", scrolledForm, func(ok bool) {
+		if ok {
+			log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
+			if firstName.Text == "" || lastName.Text == "" {
+				dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+			}
+			afm2Uint, err := strconv.ParseUint(afm.Text, 10, 0)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+			}
 
-	saveButton.OnTapped = func() {
-		log.Println("Saving a landlord named: ", firstName.Text+""+lastName.Text)
-		if firstName.Text == "" || lastName.Text == "" {
-			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), AppState.window)
+			owner.FirstName = firstName.Text
+			owner.LastName = lastName.Text
+			owner.FathersName = fathersName.Text
+			owner.AFM = uint(afm2Uint)
+			owner.ADT = adt.Text
+			owner.E9 = selectedFileBytes
+			owner.HomeAddress = homeAdress.Text
+			owner.PhoneNumber = phoneNum.Text
+			owner.Email = email.Text
+			owner.AccountantInfo = accountInfo.Text
+			owner.Notes = notes.Text
+
+			*owners = append(*owners, owner)
+			onSave(owner.FirstName + " " + owner.LastName)
+			log.Println("Updated entry successfully!")
+			return
+		} else {
+			log.Println("User probably clicked cancel.")
+			return
 		}
-		afm2Uint, err := strconv.ParseUint(afm.Text, 10, 0)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), AppState.window)
-		}
+	}, appState.window)
 
-		owner.FirstName = firstName.Text
-		owner.LastName = lastName.Text
-		owner.FathersName = fathersName.Text
-		owner.AFM = uint(afm2Uint)
-		owner.ADT = adt.Text
-		owner.E9 = selectedFileBytes
-		owner.HomeAddress = homeAdress.Text
-		owner.PhoneNumber = phoneNum.Text
-		owner.Email = email.Text
-		owner.AccountantInfo = accountInfo.Text
-		owner.Notes = notes.Text
-
-		log.Printf(">>> landlord struct: %v\n", owner)
-		*owners = append(*owners, owner)
-		labelContainer.Add(widget.NewLabel(owner.FirstName + " " + owner.LastName))
-
-		onSave(owner.FirstName + " " + owner.LastName)
-
-		popup.Hide()
-	}
-
-	popup.Resize(fyne.NewSize(300, 500))
-	popup.Show()
+	d.Resize(fyne.NewSize(400, 600))
+	d.Show()
 }
 
-func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
+func showRenterEntriesPopup(appState *AppState, renters *[]RenterDetails, labelContainer fyne.Container, onSave func(string)) {
 	log.Printf(">>> renters: %v\n", renters)
 	var renter RenterDetails
 	var selectedFileBytes []byte
+
+	inviSpacer := func(height float32) fyne.CanvasObject {
+		spacer := canvas.NewRectangle(color.Transparent)
+		spacer.SetMinSize(fyne.NewSize(1, height))
+
+		return spacer
+	}
 
 	firstName := widget.NewEntry()
 	firstName.PlaceHolder = "Όνομα"
@@ -1242,7 +1283,7 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 	fathersName := widget.NewEntry()
 	fathersName.PlaceHolder = "Όνομα Πατρός"
 
-	afm := widget.NewEntry() // ΑΦΜ
+	afm := xwidget.NewNumericalEntry() // ΑΦΜ
 	afm.PlaceHolder = "Α.Φ.Μ."
 
 	adt := widget.NewEntry() // ΑΔΤ
@@ -1258,10 +1299,10 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
-				dialog.ShowError(err, AppState.window)
+				dialog.ShowError(err, appState.window)
 				return
 			}
-		}, AppState.window)
+		}, appState.window)
 
 		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
@@ -1269,48 +1310,60 @@ func showRenterEntriesPopup(AppState *AppState, renters *[]RenterDetails, labelC
 
 	notes := widget.NewEntry()
 
-	cancelButton := widget.NewButton("Cancel", nil)
-	saveButton := widget.NewButton("Save", nil)
-
 	containerE9 := container.NewHBox(labelE9, buttonE9)
-	buttonContainer := container.NewHBox(cancelButton, saveButton)
-	content := container.NewVBox(firstName, lastName, fathersName, afm, adt, containerE9, notes, buttonContainer)
 
-	popup := widget.NewModalPopUp(content, AppState.window.Canvas())
+	form := container.NewPadded(container.NewVBox(
+		inviSpacer(10),
+		firstName,
+		inviSpacer(14),
+		lastName,
+		inviSpacer(14),
+		fathersName,
+		inviSpacer(14),
+		afm,
+		inviSpacer(14),
+		adt,
+		inviSpacer(14),
+		containerE9,
+		inviSpacer(14),
+		notes,
+		inviSpacer(10),
+	))
+	scrolledForm := container.NewVScroll(form)
+	scrolledForm.SetMinSize(fyne.NewSize(400, 300))
 
-	cancelButton.OnTapped = func() {
-		popup.Hide()
-	}
+	d := dialog.NewCustomConfirm("Στοιχεία Μησθωτή", "Save", "Cancel", scrolledForm,
+		func(ok bool) {
+			if ok {
+				log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
+				if firstName.Text == "" || lastName.Text == "" {
+					dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
+				}
+				afmINT, err := strconv.ParseUint(afm.Text, 10, 0)
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), appState.window)
+				}
 
-	saveButton.OnTapped = func() {
-		log.Println("Saving a landlord named: ", firstName.Text+""+lastName.Text)
-		if firstName.Text == "" || lastName.Text == "" {
-			dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), AppState.window)
-		}
-		afmINT, err := strconv.ParseUint(afm.Text, 10, 0)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Α.Φ.Μ. not valid."), AppState.window)
-		}
+				renter.FirstName = firstName.Text
+				renter.LastName = lastName.Text
+				renter.FathersName = fathersName.Text
+				renter.AFM = uint(afmINT)
+				renter.ADT = adt.Text
+				renter.E9 = selectedFileBytes
+				renter.Notes = notes.Text
 
-		renter.FirstName = firstName.Text
-		renter.LastName = lastName.Text
-		renter.FathersName = fathersName.Text
-		renter.AFM = uint(afmINT)
-		renter.ADT = adt.Text
-		renter.E9 = selectedFileBytes
-		renter.Notes = notes.Text
+				*renters = append(*renters, renter)
+				onSave(renter.FirstName + " " + renter.LastName)
+				log.Println("Updated entry successfully!")
+				return
+			} else {
+				log.Println("User probably clicked cancel.")
+				return
+			}
+		}, appState.window)
 
-		log.Printf(">>> renters struct: %v\n", renter)
-		*renters = append(*renters, renter)
-		labelContainer.Add(widget.NewLabel(renter.FirstName + " " + renter.LastName))
-
-		onSave(renter.FirstName + " " + renter.LastName)
-
-		popup.Hide()
-	}
-
-	popup.Resize(fyne.NewSize(300, 500))
-	popup.Show()
+	d.Resize(fyne.NewSize(400, 600))
+	d.Show()
 }
 
 func addRenter(appState *AppState) error {
@@ -1336,22 +1389,26 @@ func addRenter(appState *AppState) error {
 
 	contractSelect := widget.NewSelectEntry(opts)
 	contractSelect.PlaceHolder = "Επιλoγή Συμβόλαιου"
+	// Find a better solution for this...
+	contractSelect.OnChanged = func(s string) {
+		found := false
+		for _, option := range opts {
+			if s == option {
+				found = true
+				break
+			}
+		}
+		if !found && s != "" {
+			contractSelect.SetText(contractSelect.PlaceHolder)
+		}
+	}
 
-	firstName := widget.NewEntry()
-	firstName.PlaceHolder = "Όνομα"
-
-	lastName := widget.NewEntry()
-	lastName.PlaceHolder = "Επώνυμο"
-
-	fathersName := widget.NewEntry()
-	fathersName.PlaceHolder = "Όνομα Πατρός"
-
-	afm := widget.NewEntry() // ΑΦΜ
+	firstName := newEntryWithLabel("Όνομα")
+	lastName := newEntryWithLabel("Επώνυμο")
+	fathersName := newEntryWithLabel("Όνομα Πατρός")
+	afm := xwidget.NewNumericalEntry()
 	afm.PlaceHolder = "Α.Φ.Μ."
-
-	adt := widget.NewEntry() // ΑΔΤ
-	adt.PlaceHolder = "Α.Δ.Τ."
-
+	adt := newEntryWithLabel("Α.Δ.Τ.")
 	labelE9 := widget.NewLabel("E9")
 	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
 		dlg := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
@@ -1370,7 +1427,6 @@ func addRenter(appState *AppState) error {
 		dlg.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".pdf"}))
 		dlg.Show()
 	})
-
 	notes := widget.NewEntry()
 
 	containerE9 := container.NewHBox(labelE9, buttonE9)
@@ -1471,21 +1527,26 @@ func addOwner(appState *AppState) error {
 
 	contractSelect := widget.NewSelectEntry(opts)
 	contractSelect.PlaceHolder = "Επιλογή Συμβολαίου"
+	// Find a better solution for this...
+	contractSelect.OnChanged = func(s string) {
+		found := false
+		for _, option := range opts {
+			if s == option {
+				found = true
+				break
+			}
+		}
+		if !found && s != "" {
+			contractSelect.SetText(contractSelect.PlaceHolder)
+		}
+	}
 
-	firstName := widget.NewEntry()
-	firstName.PlaceHolder = "Όνομα"
-
-	lastName := widget.NewEntry()
-	lastName.PlaceHolder = "Επώνυμο"
-
-	fathersName := widget.NewEntry()
-	fathersName.PlaceHolder = "Όνομα Πατρός"
-
-	afm := widget.NewEntry() // ΑΦΜ
+	firstName := newEntryWithLabel("Όνομα")
+	lastName := newEntryWithLabel("Επώνυμο")
+	fathersName := newEntryWithLabel("Όνομα Πατρός")
+	afm := xwidget.NewNumericalEntry()
 	afm.PlaceHolder = "Α.Φ.Μ."
-
-	adt := widget.NewEntry() // ΑΔΤ
-	adt.PlaceHolder = "Α.Δ.Τ."
+	adt := newEntryWithLabel("Α.Δ.Τ.")
 
 	labelE9 := widget.NewLabel("E9")
 	buttonE9 := widget.NewButtonWithIcon("Add E9", theme.FileIcon(), func() {
@@ -1506,18 +1567,11 @@ func addOwner(appState *AppState) error {
 		dlg.Show()
 	})
 
-	homeAdress := widget.NewEntry()
-	homeAdress.PlaceHolder = "Διεύθυνση"
-
-	phoneNum := widget.NewEntry()
+	homeAdress := newEntryWithLabel("Διεύθυνση")
+	phoneNum := xwidget.NewNumericalEntry()
 	phoneNum.PlaceHolder = "Τηλέφωνο"
-
-	email := widget.NewEntry()
-	email.PlaceHolder = "e-mail"
-
-	accountInfo := widget.NewEntry()
-	accountInfo.PlaceHolder = "Στοιχέια Λογιστή"
-
+	email := newEntryWithLabel("e-mail")
+	accountInfo := newEntryWithLabel("Στοιχέια Λογιστή")
 	notes := widget.NewEntry()
 
 	containerE9 := container.NewHBox(labelE9, buttonE9)
