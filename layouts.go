@@ -550,12 +550,6 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
-	// bgImg := canvas.NewImageFromResource(resourceBackgroundJpg)
-	// bgImg.FillMode = canvas.ImageFillCover
-	// bgImg.ScaleMode = canvas.ImageScaleFastest
-	//
-	// overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
-
 	listViewButton := widget.NewButton("Συμβόλαια", func() {
 		lView, err := contractView(appState)
 		if err != nil {
@@ -585,9 +579,8 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(container.NewStack(appState.bg, view))
 	})
 
-	buttons := container.NewVBox(listViewButton, landLordButton, renterButton)
-	buttonContainer := container.NewCenter(buttons)
-	content := container.NewBorder(nil, nil, nil, nil, buttonContainer)
+	customLayout := NewCenteredButtonsLayout(200, 60, 20)
+	content := container.New(customLayout, listViewButton, landLordButton, renterButton)
 	body := container.NewStack(appState.bg, content)
 
 	return body, nil
