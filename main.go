@@ -64,6 +64,12 @@ func InitApp() (*AppState, error) {
 	overlay := canvas.NewRectangle(color.NRGBA{43, 45, 66, 128})
 	background := container.NewStack(bgImg, overlay)
 
+	lg := canvas.NewImageFromResource(resourceLogoPng)
+	lg.FillMode = canvas.ImageFillContain
+	lg.ScaleMode = canvas.ImageScaleSmooth
+	lg.SetMinSize(fyne.NewSize(600, 300))
+	logo := container.NewBorder(lg, nil, nil, nil, nil)
+
 	// This is deprecated will be removed for fyne v3.0
 	// Don't care!
 	myApp.Settings().SetTheme(&MyTheme{base: theme.DarkTheme()})
@@ -94,5 +100,6 @@ func InitApp() (*AppState, error) {
 		app:    myApp,
 		window: myWindow,
 		bg:     background,
+		logo:   logo,
 	}, nil
 }

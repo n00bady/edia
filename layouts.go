@@ -194,7 +194,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			log.Printf("error constructing list layout: %v", err)
 			dialog.ShowError(err, appState.window)
 		}
-		appState.window.SetContent(mainview)
+		appState.window.SetContent(container.NewStack(appState.bg, mainview))
 	})
 
 	// Cancel button to go back
@@ -504,7 +504,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			log.Printf("error constructing list layout: %v", err)
 		}
 		body := container.NewBorder(nil, nil, nil, nil, tmp)
-		appState.window.SetContent(body)
+		appState.window.SetContent(container.NewStack(appState.bg, body))
 	})
 
 	// landLordsContainer := container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord, landLordsLabelsContainer)
@@ -581,7 +581,7 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 
 	customLayout := NewCenteredButtonsLayout(200, 60, 20)
 	content := container.New(customLayout, listViewButton, landLordButton, renterButton)
-	body := container.NewStack(appState.bg, content)
+	body := container.NewStack(appState.bg, appState.logo, content)
 
 	return body, nil
 }
@@ -810,8 +810,20 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 	addButton.Resize(fyne.NewSize(200, 200))
 	backButton.Resize(fyne.NewSize(200, 200))
 
+	emptyMsg := canvas.NewText("Add something to begin.", theme.ForegroundColor())
+	emptyMsg.TextSize = 18
+	emptyMsg.Alignment = fyne.TextAlignCenter
+	emptyMsg.TextStyle = fyne.TextStyle{Italic: true}
+	emptyContainer := container.NewCenter(emptyMsg)
+	if list.Length() == 0 {
+		emptyContainer.Show()
+	} else {
+		emptyContainer.Hide()
+	}
+
 	body := container.New(
 		layout.NewBorderLayout(nil, nil, nil, nil),
+		emptyContainer,
 		container.NewVScroll(list),
 		container.New(
 			layout.NewVBoxLayout(),

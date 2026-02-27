@@ -14,3 +14,10 @@ var resourceBackgroundJpg = &fyne.StaticResource{
 	StaticName:    "assets/background.jpg",
 	StaticContent: resourceBackgroundJpgData,
 }
+
+//go:embed assets/logo.png
+var resourceLogoPngData []byte
+var resourceLogoPng = &fyne.StaticResource{
+	StaticName:    "assets/logo.png",
+	StaticContent: resourceLogoPngData,
+}
