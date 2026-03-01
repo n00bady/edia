@@ -672,7 +672,7 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 		items[i] = s
 	}
 
-	list := buildList(appState,items)
+	list := buildList(appState, items)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)
@@ -1080,21 +1080,26 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 		popup.Hide()
 	}
 	deleteButton.OnTapped = func() {
-		err := delEntry(appState.db, entry.ID)
-		if err != nil {
-			dialog.ShowError(err, appState.window)
-		}
-		dialog.ShowInformation("Deleted", fmt.Sprintf("Deteled entry %d!", entry.ID), appState.window)
-		if err != nil {
-			dialog.ShowError(err, appState.window)
-		}
-		// Need to do all that to update the list in the mainView after a deletion
-		*entries, err = getAllEntries(appState.db)
-		if err != nil {
-			log.Printf("Error updating the list: %v", err)
-		}
-		list.Refresh()
-		popup.Hide()
+		dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
+			if b {
+				err := delEntry(appState.db, entry.ID)
+				if err != nil {
+					dialog.ShowError(err, appState.window)
+				}
+				dialog.ShowInformation("Deleted", fmt.Sprintf("Deteled entry %d!", entry.ID), appState.window)
+				if err != nil {
+					dialog.ShowError(err, appState.window)
+				}
+				// Need to do all that to update the list in the mainView after a deletion
+				*entries, err = getAllEntries(appState.db)
+				if err != nil {
+					log.Printf("Error updating the list: %v", err)
+				}
+				list.Refresh()
+				popup.Hide()
+			}
+		}, appState.window)
+		dlg.Show()
 	}
 
 	popup.Resize(fyne.NewSize(appState.window.Canvas().Size().Width*0.8, appState.window.Canvas().Size().Height*0.8))
