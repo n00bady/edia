@@ -747,7 +747,9 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 		},
 		func() fyne.CanvasObject {
 			nameLabel := widget.NewLabel("Name")
+			nameLabel.TextStyle.Bold = true
 			dateLabel := widget.NewLabel("End Date")
+			dateLabel.TextStyle.Italic = true
 
 			return container.NewBorder(nil, nil, nil, dateLabel, nameLabel)
 		},

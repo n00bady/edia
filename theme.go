@@ -16,7 +16,7 @@ func (t *MyTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) col
 	case theme.ColorNameBackground:
 		return color.RGBA{43, 45, 66, 255}
 	case theme.ColorNameForeground:
-		return color.RGBA{217, 215, 201, 255}
+		return color.RGBA{255, 248, 231, 255}
 	case theme.ColorNamePrimary:
 		return color.RGBA{230, 190, 125, 255}
 	case theme.ColorNameButton:

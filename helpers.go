@@ -183,6 +183,7 @@ func buildList(appState *AppState, data []any) *widget.List {
 		},
 		func() fyne.CanvasObject {
 			label := widget.NewLabel("")
+			label.TextStyle.Bold = true
 			button := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), nil)
 			return container.NewHBox(label, layout.NewSpacer(), button)
 		},
