@@ -162,6 +162,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 		}
 
 		// We build the new entry here
+		// TODO: Add a check to make sure they have unique names!
 		newEntry := Entry{
 			Name:      entriesMap["Όνομα Εγγραφής"].Text,
 			Owners:    landLords,
@@ -745,7 +746,10 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 			return len(entries)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
+			nameLabel := widget.NewLabel("Name")
+			dateLabel := widget.NewLabel("End Date")
+
+			return container.NewBorder(nil, nil, nil, dateLabel, nameLabel)
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			log.Printf("Updating item with ID: %d", lii)
@@ -754,12 +758,11 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 				return
 			}
 			entry := entries[lii]
-			label, ok := co.(*widget.Label)
-			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
-				return
-			}
-			label.SetText(fmt.Sprintf("%s", entry.Name))
+			box := co.(*fyne.Container)
+			nameLabel := box.Objects[0].(*widget.Label)
+			dateLabel := box.Objects[1].(*widget.Label)
+			nameLabel.SetText(entry.Name)
+			dateLabel.SetText(fmt.Sprintf("Λήξη: %s", entry.End))
 		},
 	)
 
@@ -1467,12 +1470,18 @@ func addRenter(appState *AppState) error {
 		func(ok bool) {
 			if ok {
 				var selectedEntry Entry
+				var set bool
 				for _, e := range entryList {
 					if e.Name == contractSelect.Text {
 						selectedEntry = e
+						set = true
 					} else {
-						dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+						set = false
 					}
+				}
+				// not ideal but works
+				if !set {
+					dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
 				}
 
 				log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
@@ -1619,12 +1628,19 @@ func addOwner(appState *AppState) error {
 	d := dialog.NewCustomConfirm("Enter Owner Details", "Save", "Cancel", scrolledForm, func(ok bool) {
 		if ok {
 			var selectedEntry Entry
+			var set bool
+			fmt.Println("selected: " + contractSelect.Text)
 			for _, e := range entryList {
 				if e.Name == contractSelect.Text {
 					selectedEntry = e
+					set = true
 				} else {
-					dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+					set = false
 				}
+			}
+			if !set {
+				dialog.ShowInformation("Error", "Cannot find the selected contract.", appState.window)
+				return
 			}
 
 			log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
