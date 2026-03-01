@@ -598,7 +598,7 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 	for i, s := range renters {
 		items[i] = s
 	}
-	list := buildList(items)
+	list := buildList(appState, items)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)
@@ -671,7 +671,8 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	for i, s := range landlords {
 		items[i] = s
 	}
-	list := buildList(items)
+
+	list := buildList(appState,items)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)

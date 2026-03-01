@@ -14,7 +14,10 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -172,29 +175,55 @@ func openFile(e Entry, appState *AppState) error {
 	return nil
 }
 
-func buildList(data []any) *widget.List {
-	list := widget.NewList(
+func buildList(appState *AppState, data []any) *widget.List {
+	var list *widget.List
+	list = widget.NewList(
 		func() int {
 			return len(data)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("")
+			label := widget.NewLabel("")
+			button := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), nil)
+			return container.NewHBox(label, layout.NewSpacer(), button)
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			if lii < 0 || lii >= len(data) {
 				return
 			}
-			label, ok := co.(*widget.Label)
+
+			hbox := co.(*fyne.Container)
+			label, ok := hbox.Objects[0].(*widget.Label)
 			if !ok {
 				log.Println("CanvasObject is not *widget.Label! It's: %s\n)", fmt.Sprintf("%T", co))
 				return
 			}
+			button := hbox.Objects[2].(*widget.Button)
 
 			switch t := data[lii].(type) {
 			case RenterDetails:
 				label.SetText(fmt.Sprintf("%s", t.FirstName+" "+t.LastName))
+				button.OnTapped = func() {
+					dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
+						if b {
+							// delete renter
+							data = append(data[:lii], data[lii+1:]...)
+							list.Refresh()
+						}
+					}, appState.window)
+					dlg.Show()
+				}
 			case OwnerDetails:
 				label.SetText(fmt.Sprintf("%s", t.FirstName+" "+t.LastName))
+				button.OnTapped = func() {
+					dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
+						if b {
+							// delete owner
+							data = append(data[:lii], data[lii+1:]...)
+							list.Refresh()
+						}
+					}, appState.window)
+					dlg.Show()
+				}
 			default:
 				log.Println("Unknown type.")
 			}
