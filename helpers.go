@@ -205,7 +205,7 @@ func buildList(appState *AppState, data []any) *widget.List {
 				button.OnTapped = func() {
 					dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
 						if b {
-							// delete renter
+							deleteRenter(appState.db, int64(t.ID))
 							data = append(data[:lii], data[lii+1:]...)
 							list.Refresh()
 						}
@@ -217,7 +217,7 @@ func buildList(appState *AppState, data []any) *widget.List {
 				button.OnTapped = func() {
 					dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
 						if b {
-							// delete owner
+							deleteOwner(appState.db, int64(t.ID))
 							data = append(data[:lii], data[lii+1:]...)
 							list.Refresh()
 						}

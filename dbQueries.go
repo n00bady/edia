@@ -669,6 +669,70 @@ func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	return entries, nil
 }
 
+func deleteOwner(db *sql.DB, id int64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	_, err = tx.Exec(`DELETE FROM entries_owner WHERE owner_id = ?`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error deleting from entries_owner: %v", err)
+	}
+
+	res, err := tx.Exec(`DELETE FROM ownerDetails WHERE id = ?`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error deleting owner: %v", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error checking rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return fmt.Errorf("owner with id %d not found", id)
+	}
+
+	return tx.Commit()
+}
+
+func deleteRenter(db *sql.DB, id int64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	_, err = tx.Exec(`DELETE FROM entries_renter WHERE renter_id = ?`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error deleting from entries_renter: %v", err)
+	}
+
+	res, err := tx.Exec(`DELETE FROM renterDetails WHERE id = ?`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error deleting renter: %v", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error checking rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return fmt.Errorf("renter with id %d not found", id)
+	}
+
+	return tx.Commit()
+}
+
 // might not need this anymore...
 func resetAutoIncrement(db *sql.DB) error {
 	_, err := db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM entries) WHERE name = 'entries'")
