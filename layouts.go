@@ -1067,13 +1067,12 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 	content := container.NewBorder(nil, buttonsContainer, nil, nil, scrollableContainer)
 
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
-
 	editButton.OnTapped = func() {
 		editForm, err := editForm(appState, entry.ID)
 		if err != nil {
 			log.Printf("error creating desktopEditForm for %d: %v", entry.ID, err)
 		}
-		appState.window.SetContent(editForm)
+		appState.window.SetContent(container.NewStack(appState.bg, editForm))
 		popup.Hide()
 	}
 	closeButton.OnTapped = func() {
