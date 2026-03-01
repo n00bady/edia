@@ -605,7 +605,7 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 		log.Printf("Selected item: %d\n", id)
 		if id >= 0 && id < len(renters) {
 			log.Printf("Showing popup for item: %v\n", renters[id].LastName)
-			showDetailsRenterPopup(appState, &renters[id])
+			showRenterDetails(appState, &renters[id])
 			list.UnselectAll()
 		}
 	}
@@ -662,14 +662,14 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 
 func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Println("Creating the ownerView...")
-	landlords, err := getAllOwners(appState.db)
-	log.Printf("query Results: %v\n", landlords)
+	owners, err := getAllOwners(appState.db)
+	log.Printf("query Results: %v\n", owners)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]any, len(landlords))
-	for i, s := range landlords {
+	items := make([]any, len(owners))
+	for i, s := range owners {
 		items[i] = s
 	}
 
@@ -677,9 +677,9 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 
 	list.OnSelected = func(id widget.ListItemID) {
 		log.Printf("Selected item: %d\n", id)
-		if id >= 0 && id < len(landlords) {
-			log.Printf("Showing popup for item: %v\n", landlords[id].LastName)
-			showDetailsOwnerPopup(appState, &landlords[id])
+		if id >= 0 && id < len(owners) {
+			log.Printf("Showing popup for item: %v\n", owners[id].LastName)
+			showOwnerDetails(appState, &owners[id])
 			list.UnselectAll()
 		}
 	}
@@ -886,6 +886,79 @@ func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer 
 			}
 		}
 	}
+}
+
+func showOwnerDetails(appState *AppState, owner *OwnerDetails) {
+	log.Printf("Showing details for owner: %v\n", owner.ID)	
+
+	editBtn := widget.NewButton("Edit", nil)
+	closeBtn := widget.NewButton("Close", nil)
+
+	buttonsContainer := container.NewGridWithColumns(2, editBtn, closeBtn)
+
+	scrollableContainer := container.NewVScroll(container.NewVBox(
+		widget.NewLabel(fmt.Sprintf("ID:               %d", owner.ID)),
+		widget.NewLabel(fmt.Sprintf("Όνομα:            %s", owner.FirstName)),
+		widget.NewLabel(fmt.Sprintf("Επώνυμο:          %s", owner.LastName)),
+		widget.NewLabel(fmt.Sprintf("Όνομα Πατρός:     %s", owner.FathersName)),
+		widget.NewLabel(fmt.Sprintf("Α.Φ.Μ.:           %d", owner.AFM)),
+		widget.NewLabel(fmt.Sprintf("Α.Δ.Τ.:           %s", owner.ADT)),
+		// TODO: Make button to show e9 in default app
+		widget.NewLabel(fmt.Sprintf("Διεύθυνση:        %s", owner.HomeAddress)),
+		widget.NewLabel(fmt.Sprintf("Τηλέφωνο:         %s", owner.PhoneNumber)),
+		widget.NewLabel(fmt.Sprintf("e-mail:           %s", owner.Email)),
+		widget.NewLabel(fmt.Sprintf("Στοιχία Λογιστή:\n%s", owner.AccountantInfo)),
+		widget.NewLabel(fmt.Sprintf("Notes:\n          %s", owner.Notes)),
+	))
+
+	content := container.NewBorder(nil, buttonsContainer, nil, nil, scrollableContainer)
+	popup := widget.NewModalPopUp(content,appState.window.Canvas())
+
+	editBtn.OnTapped = func() {
+		// TODO: implement it
+	}
+	closeBtn.OnTapped = func() {
+		popup.Hide()
+	}
+
+	popup.Resize(fyne.NewSize(appState.window.Canvas().Size().Width*0.66, appState.window.Canvas().Size().Height*0.66))
+
+	popup.Show()
+}
+
+func showRenterDetails(appState *AppState, renter *RenterDetails) {
+	log.Printf("Showing details for renter: %v\n", renter.ID)	
+
+	editBtn := widget.NewButton("Edit", nil)
+	closeBtn := widget.NewButton("Close", nil)
+
+	// buttonsContainer := container.NewHBox(closeBtn, layout.NewSpacer(), editBtn)
+	buttonsContainer := container.NewGridWithColumns(2, editBtn, closeBtn)
+
+	scrollableContainer := container.NewVScroll(container.NewVBox(
+		widget.NewLabel(fmt.Sprintf("ID:           %d", renter.ID)),
+		widget.NewLabel(fmt.Sprintf("Όνομα:        %s", renter.FirstName)),
+		widget.NewLabel(fmt.Sprintf("Επώνυμο:      %s", renter.LastName)),
+		widget.NewLabel(fmt.Sprintf("Όνομα Πατρός: %s", renter.FathersName)),
+		widget.NewLabel(fmt.Sprintf("Α.Φ.Μ.:       %d", renter.AFM)),
+		widget.NewLabel(fmt.Sprintf("Α.Δ.Τ.:       %s", renter.ADT)),
+		// TODO: Make button to show e9 in default app
+		widget.NewLabel(fmt.Sprintf("Notes:\n  	   %s", renter.Notes)),
+	))
+
+	content := container.NewBorder(nil, buttonsContainer, nil, nil, scrollableContainer)
+	popup := widget.NewModalPopUp(content,appState.window.Canvas())
+
+	editBtn.OnTapped = func() {
+		// TODO: implement it
+	}
+	closeBtn.OnTapped = func() {
+		popup.Hide()
+	}
+
+	popup.Resize(fyne.NewSize(appState.window.Canvas().Size().Width*0.66, appState.window.Canvas().Size().Height*0.66))
+
+	popup.Show()
 }
 
 func showDetailsRenterPopup(appState *AppState, renter *RenterDetails) {
