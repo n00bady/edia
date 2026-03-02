@@ -669,6 +669,61 @@ func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	return entries, nil
 }
 
+func updateOwner(db *sql.DB, o OwnerDetails) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`
+		UPDATE ownerDetails
+		SET firstName = ?, lastName = ?, fathersName = ?, afm = ?, adt = ?, e9 = ?, homeAddress = ?, phoneNumber = ?, email = ?, accountantInfo = ?, notes = ?
+		WHERE id = ?`,
+		o.FirstName, o.LastName, o.FathersName, o.AFM, o.ADT, o.E9, o.HomeAddress,
+		o.PhoneNumber, o.Email, o.AccountantInfo, o.Notes, o.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("owner with id %d not found", o.ID)
+	}
+
+	return tx.Commit()
+}
+
+func updateRenter(db *sql.DB, r RenterDetails) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`
+		UPDATE renterDetails
+		SET firstName = ?, lastName = ?, fathersName = ?, afm = ?, adt = ?, e9 = ?, notes = ?
+		WHERE id = ?`,
+		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.E9, r.Notes, r.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("renter with id %d not found", r.ID)
+	}
+
+	return tx.Commit()
+}
+
 func deleteOwner(db *sql.DB, id int64) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -731,6 +786,31 @@ func deleteRenter(db *sql.DB, id int64) error {
 	}
 
 	return tx.Commit()
+}
+
+func getOwner(db *sql.DB, id uint) (OwnerDetails, error) {
+	var o OwnerDetails
+
+	err := db.QueryRow(`SELECT * FROM ownerDetails WHERE id = ?`, id).Scan(
+		&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9,
+		&o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
+	if err != nil {
+		return o, err
+	}
+
+	return o, nil
+}
+
+func getRenter(db *sql.DB, id uint) (RenterDetails, error) {
+	var r RenterDetails
+
+	err := db.QueryRow(`SELECT * FROM renterDetails WHERE id = ?`, id).Scan(
+		&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
+	if err != nil {
+		return r, err
+	}
+
+	return r, err
 }
 
 // might not need this anymore...
