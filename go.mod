@@ -1,4 +1,4 @@
-module edia
+module agricoman
 
 go 1.24.1
 

@@ -17,11 +17,11 @@ import (
 
 func main() {
 	// App initialization
-	log.Printf("Sarting the EDIA App!")
+	log.Printf("Sarting the AgriCoMan App!")
 	AppInst, err := InitApp()
 	if err != nil {
 		log.Printf("error initializing the App: %v", err)
-	}
+	} 
 	defer AppInst.db.Close()
 
 	log.Printf("Constructing the intial view...")
@@ -53,8 +53,8 @@ func main() {
 // App initialization
 func InitApp() (*AppState, error) {
 	log.Printf("Initializing the application...")
-	myApp := app.NewWithID("xyz.n00bady.edia")
-	myWindow := myApp.NewWindow("EDIA")
+	myApp := app.NewWithID("xyz.n00bady.agricoman")
+	myWindow := myApp.NewWindow("AgriCoMan")
 	myWindow.SetPadded(false)
 	myWindow.SetMaster()
 
