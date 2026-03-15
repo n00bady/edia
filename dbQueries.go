@@ -36,8 +36,8 @@ func initDB(dbPath string) (*sql.DB, error) {
 			size REAL NOT NULL,
 			type TEXT NOT NULL,
 			rent REAL NOT NULL,
-			start TEXT NOT NULL,
-			end TEXT NOT NULL,
+			startDate TEXT NOT NULL,
+			endDate TEXT NOT NULL,
 			emisth BLOB
         );
 	`
@@ -141,7 +141,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, start, end, emisth)
+		INSERT INTO entries (name, timestamp, atak, kaek, size, type, rent, startDate, endDate, emisth)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.emisth)
 	if err != nil {
@@ -257,7 +257,7 @@ func updateEntry(db *sql.DB, entry Entry) error {
 
 	_, err = tx.Exec(`
 		UPDATE entries
-		SET name = ?, timestamp = ?, atak = ?, kaek = ?, size = ?, type = ?, rent = ?, start = ?, end = ?, emisth = ?
+		SET name = ?, timestamp = ?, atak = ?, kaek = ?, size = ?, type = ?, rent = ?, startDate = ?, endDate = ?, emisth = ?
 		WHERE id = ?`,
 		entry.Name, entry.Timestamp, entry.ATAK, entry.KAEK, entry.Size, entry.Type, entry.Rent, entry.Start, entry.End, entry.emisth, entry.ID)
 	if err != nil {
@@ -621,7 +621,7 @@ func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
-		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.start, e.end
+		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.startDate, e.endDate
 		FROM entries e
 		JOIN entries_owner eo ON e.id = eo.entry_id
 		WHERE eo.owner_id = ?`,
@@ -647,7 +647,7 @@ func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
-		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.start, e.end
+		SELECT e.id, e.name, e.timestamp, e.atak, e.kaek, e.size, e.type, e.rent, e.startDate, e.endDate
 		FROM entries e
 		JOIN entries_renter er ON e.id = er.entry_id
 		WHERE er.renter_id = ?`,
@@ -831,4 +831,140 @@ func resetAutoIncrement(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func getYearRange(db *sql.DB) (oldestYear, newestYear int, err error) {
+	query := `
+		SELECT 
+            MIN(year) AS oldest,
+            MAX(year) AS newest
+        FROM (
+            SELECT substr(startDate, 7, 4) AS year FROM entries
+            UNION ALL
+            SELECT substr(endDate,   7, 4) AS year FROM entries
+        )
+        WHERE year GLOB '[0-9][0-9][0-9][0-9]'   -- basic protection against bad data
+	`
+
+	var oldest, newest sql.NullInt64
+
+	err = db.QueryRow(query).Scan(&oldest, &newest)
+	if err == sql.ErrNoRows || !oldest.Valid && !newest.Valid {
+		return 0, 0, fmt.Errorf("no valid date entries found")
+	}
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if !oldest.Valid {
+		return 0, 0, fmt.Errorf("no valid oldest year found")
+	}
+
+	if !newest.Valid {
+		return 0, 0, fmt.Errorf("no valid newest year found")
+	}
+
+	return int(oldest.Int64), int(newest.Int64), nil
+}
+
+func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
+	var entries []Entry
+
+	// not very safe in case if bad date format
+	query := `
+		SELECT *
+		FROM entries
+		WHERE substr(startDate, 7, 4) <= ? AND substr(endDate, 7, 4) >= ? 
+		ORDER BY startDate ASC
+	`
+
+	rows, err := db.Query(query, year, year)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get entries of the year %d: %v", year, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e Entry
+
+		err := rows.Scan(&e.ID, &e.Name, &e.Timestamp, &e.ATAK, &e.KAEK, &e.Size, &e.Type, &e.Rent, &e.Start, &e.End, &e.emisth)
+		if err != nil {
+			return nil, err
+		}
+
+		// get the owners for the entry
+		ownerRows, err := db.Query(`
+			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes 
+			FROM ownerDetails o
+			JOIN entries_owner eo ON o.id = eo.owner_id
+			WHERE eo.entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for ownerRows.Next() {
+			var o OwnerDetails
+
+			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
+			if err != nil {
+				ownerRows.Close()
+				return nil, err
+			}
+			e.Owners = append(e.Owners, o)
+		}
+		ownerRows.Close()
+
+		// get the renters for the entry
+		renterRows, err := db.Query(`
+			SELECT r.id, r.firstName, r.lastName, r.fathersName, r.afm, r.adt, r.e9, r.notes
+			FROM renterDetails r
+			JOIN entries_renter er ON r.id = er.renter_id
+			WHERE er.entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for renterRows.Next() {
+			var r RenterDetails
+
+			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
+			if err != nil {
+				renterRows.Close()
+				return nil, err
+			}
+			e.Renters = append(e.Renters, r)
+		}
+		renterRows.Close()
+
+		// get the coordinates for the entry
+		coordRows, err := db.Query(`
+			SELECT *
+			FROM coordinates
+			WHERE entry_id = ?`,
+			e.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for coordRows.Next() {
+			var c Coordinates
+			err := coordRows.Scan(&c.ID, &c.EntryID, &c.Latitude, &c.Longitude)
+			if err != nil {
+				coordRows.Close()
+				return nil, err
+			}
+			e.Coords = append(e.Coords, c)
+		}
+		coordRows.Close()
+
+		entries = append(entries, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }

@@ -15,6 +15,7 @@ type AppState struct {
 	window fyne.Window
 	bg     fyne.CanvasObject
 	logo   fyne.CanvasObject
+	year   string
 }
 
 // Main struct/table

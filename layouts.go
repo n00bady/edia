@@ -62,6 +62,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
+	start_input.Disable()
 	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(start_input, appState.window)
 	})
@@ -70,6 +71,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
+	end_input.Disable()
 	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(end_input, appState.window)
 	})
@@ -211,8 +213,8 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	// --Different Layouts for Mobile and Desktop--
 	if fyne.CurrentDevice().IsMobile() {
 		// --Mobile layout--
-		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
-		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
+		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές: "), addLandLord), landLordsLabelsContainer)
+		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές: "), addRenter), renterLabelsContainer)
 
 		leftContainer := container.NewVBox(
 			entriesMap["Όνομα Εγγραφής"],
@@ -369,6 +371,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	// Starting date input and it's button that opens a calendar for easier date choosing
 	start_input := widget.NewEntry()
 	start_input.SetPlaceHolder("ΑΠΟ")
+	start_input.Disable()
 	start_input.SetText(selectedEntry.Start)
 	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(start_input, appState.window)
@@ -378,6 +381,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	// Same as starting date but for the ending date
 	end_input := widget.NewEntry()
 	end_input.SetPlaceHolder("ΕΩΣ")
+	end_input.Disable()
 	end_input.SetText(selectedEntry.End)
 	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
 		showCalendar(end_input, appState.window)
@@ -551,6 +555,22 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 }
 
 func mainView(appState *AppState) (fyne.CanvasObject, error) {
+	var opts []string
+	oldest, newest, err := getYearRange(appState.db)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	for i := oldest; i <= newest; i++ {
+		opts = append(opts, strconv.FormatInt(int64(i), 10))
+	}
+	yearSelect := widget.NewSelectEntry(opts)
+	yearSelect.TextStyle.Bold = true
+	yearSelect.PlaceHolder = "2026"
+	yearSelect.OnChanged = func(s string) {
+		appState.year = yearSelect.Text
+		log.Println("Year selection change to: ", appState.year)
+	}
+
 	listViewButton := widget.NewButton("Συμβόλαια", func() {
 		lView, err := contractView(appState)
 		if err != nil {
@@ -580,8 +600,15 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(container.NewStack(appState.bg, view))
 	})
 
+	settingsButton := widget.NewButton("Ρυθμίσεις", func() {
+		// view, err := settingsView(appState)
+		// if err != nil {
+		// 	log.Printf("error constructing settingsView: %v\n", err)
+		// }
+	})
+
 	customLayout := NewCenteredButtonsLayout(200, 60, 20)
-	content := container.New(customLayout, listViewButton, landLordButton, renterButton)
+	content := container.New(customLayout, container.NewBorder(yearSelect, nil, nil, nil, nil), listViewButton, landLordButton, renterButton, settingsButton)
 	body := container.NewStack(appState.bg, appState.logo, content)
 
 	return body, nil
@@ -737,10 +764,11 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 
 func contractView(appState *AppState) (fyne.CanvasObject, error) {
 	log.Printf("Creating the contractView...")
-	entries, err := getAllEntries(appState.db)
+	entries, err := getAllEntriesByYear(appState.db, appState.year)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Query Results: %v\n", entries)
 
 	list := widget.NewList(
 		func() int {
@@ -2010,3 +2038,10 @@ func editOwner(appState *AppState, id uint) error {
 
 	return nil
 }
+
+// func settingsView(appState *AppState) (fyne.CanvasObject, error) {
+// 	log.Panicln("Creating the settingsView...")
+//
+//
+// 	return body, nil
+// }

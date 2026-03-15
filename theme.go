@@ -27,6 +27,8 @@ func (t *MyTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) col
 		return color.RGBA{184, 151, 120, 255}
 	case theme.ColorNameSeparator:
 		return color.RGBA{230, 190, 125, 255}
+	case theme.ColorNameDisabled:
+		return color.RGBA{138, 114, 75, 255}
 	default:
 		return t.base.Color(name, variant)
 	}

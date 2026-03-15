@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"log"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -21,7 +23,7 @@ func main() {
 	AppInst, err := InitApp()
 	if err != nil {
 		log.Printf("error initializing the App: %v", err)
-	} 
+	}
 	defer AppInst.db.Close()
 
 	log.Printf("Constructing the intial view...")
@@ -93,6 +95,8 @@ func InitApp() (*AppState, error) {
 		}
 	}
 
+	year := strconv.FormatInt(int64(time.Now().Year()), 10)
+
 	log.Printf("App initialized successfully!")
 
 	return &AppState{
@@ -101,5 +105,6 @@ func InitApp() (*AppState, error) {
 		window: myWindow,
 		bg:     background,
 		logo:   logo,
+		year:   year,
 	}, nil
 }
