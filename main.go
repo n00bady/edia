@@ -97,6 +97,9 @@ func InitApp() (*AppState, error) {
 
 	year := strconv.FormatInt(int64(time.Now().Year()), 10)
 
+	// username
+	user := getOrAskForName(myApp, myWindow)
+
 	log.Printf("App initialized successfully!")
 
 	return &AppState{
@@ -106,5 +109,6 @@ func InitApp() (*AppState, error) {
 		bg:     background,
 		logo:   logo,
 		year:   year,
+		user:   user,
 	}, nil
 }

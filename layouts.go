@@ -600,16 +600,23 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 		appState.window.SetContent(container.NewStack(appState.bg, view))
 	})
 
-	settingsButton := widget.NewButton("Ρυθμίσεις", func() {
-		// view, err := settingsView(appState)
-		// if err != nil {
-		// 	log.Printf("error constructing settingsView: %v\n", err)
-		// }
-	})
+	// settingsButton := widget.NewButton("Ρυθμίσεις", func() {
+	// 	err := settingsView(appState)
+	// 	if err != nil {
+	// 		log.Printf("error constructing settingsView: %v\n", err)
+	// 	}
+	//
+	// 	// appState.window.SetContent(container.NewStack(appState.bg, view))
+	// })
+
+	username := appState.user
+	userLabel := widget.NewLabel("This application is running for: " + username)
+	userLabel.TextStyle.Bold = true
+	userLabel.TextStyle.Italic = true
 
 	customLayout := NewCenteredButtonsLayout(200, 60, 20)
-	content := container.New(customLayout, container.NewBorder(yearSelect, nil, nil, nil, nil), listViewButton, landLordButton, renterButton, settingsButton)
-	body := container.NewStack(appState.bg, appState.logo, content)
+	content := container.New(customLayout, container.NewBorder(yearSelect, nil, nil, nil, nil), listViewButton, landLordButton, renterButton)
+	body := container.NewStack(appState.bg, appState.logo, container.NewBorder(nil, userLabel, nil, nil, content))
 
 	return body, nil
 }
@@ -2039,9 +2046,22 @@ func editOwner(appState *AppState, id uint) error {
 	return nil
 }
 
-// func settingsView(appState *AppState) (fyne.CanvasObject, error) {
-// 	log.Panicln("Creating the settingsView...")
+// func settingsView(appState *AppState) error {
+// 	log.Println("Creating the settingsView...")
+// 	username := appState.user
+// 	text := "This application is running for " + username
+// 	userLabel := widget.NewLabel(text)
+// 	userLabel.TextStyle.Bold = true
+// 	userLabel.TextStyle.Italic = true
 //
+// 	content := container.NewPadded(container.NewVBox(
+// 		container.NewCenter(userLabel),
+// 	))
 //
-// 	return body, nil
+// 	d := dialog.NewCustomConfirm("Settings", "Save", "Cancel", content, func(b bool) {}, appState.window)
+//
+// 	d.Resize(fyne.NewSize(380, 240))
+// 	d.Show()
+//
+// 	return nil
 // }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -254,4 +255,51 @@ func NewFilteredEntry(pattern string, placeholder string) *widget.Entry {
 	}
 
 	return entry
+}
+
+func getOrAskForName(app fyne.App, w fyne.Window) string {
+	prefs := app.Preferences()
+
+	saved := prefs.String("user_display_name")
+	if saved != "" {
+		return saved
+	}
+
+	if !fyne.CurrentDevice().IsMobile() {
+		u, err := user.Current()
+		if err == nil {
+			name := strings.TrimSpace(u.Name)
+			if name == "" {
+				name = u.Username
+			}
+			if name != "" {
+				return name
+			}
+		}
+
+		return "User"
+	}
+
+	var name string
+
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Ονοματεπώνυμο")
+
+	dlg := dialog.NewForm("Παρακαλώ εισάγετε το ονοματεπώνυμο σας", "Save", "Cancel",
+		[]*widget.FormItem{
+			widget.NewFormItem("Ονοματεπώνυμο:", input),
+		}, func(b bool) {
+			if b && input.Text != "" {
+				trimmed := strings.TrimSpace(input.Text)
+				prefs.SetString("user_display_name", trimmed)
+				name = trimmed
+			} else {
+				name = "Guest"
+			}
+		}, w)
+
+	dlg.Resize(fyne.NewSize(340, 200))
+	dlg.Show()
+
+	return name
 }
