@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint:
+    name: Lint & formatting checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21' # choose your minimum supported Go version
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ${{ env.GOMODCACHE }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Ensure modules download
+        run: go mod download
+
+      - name: Check gofmt (no changes allowed)
+        run: |
+          set -e
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "gofmt needs to be run on the following files:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: Check goimports (optionally)
+        run: |
+          set -e
+          if ! command -v goimports >/dev/null 2>&1; then
+            go install golang.org/x/tools/cmd/goimports@latest
+          fi
+          out=$(goimports -l .)
+          if [ -n "$out" ]; then
+            echo "goimports needs to be run on the following files:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Install golangci-lint and run
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.59.0 # choose a recent stable version
+          args: run --timeout 5m
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ${{ env.GOMODCACHE }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies & run tests
+        run: |
+          go mod download
+          go test ./... -v
