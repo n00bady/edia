@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"fyne.io/fyne/v2"
 )
 
@@ -25,10 +24,10 @@ func NewCenteredButtonsLayout(btnWidth, btnHeight, spacing float32) *CenteredBut
 func (c *CenteredButtonsLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	// Calculate total height needed for buttons and spacing
 	totalHeight := (c.buttonHeight * 3) + (c.spacing * 2)
-	
+
 	// Calculate starting Y position to center vertically
 	startY := (size.Height - totalHeight) / 2
-	
+
 	// Calculate starting X position to center horizontally
 	startX := (size.Width - c.buttonWidth) / 2
 

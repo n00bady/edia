@@ -108,7 +108,7 @@ func TestIsNegative(t *testing.T) {
 
 func TestTruncateFloatTo2Decimals(t *testing.T) {
 	tests := []struct {
-		f float64
+		f    float64
 		want float64
 	}{
 		{1, 1.00},
@@ -126,6 +126,6 @@ func TestTruncateFloatTo2Decimals(t *testing.T) {
 }
 
 // Maybe I should add some tests for the db queries
-// I'll probably need mocking stuff and I don't feel like doing it just for that... 
+// I'll probably need mocking stuff and I don't feel like doing it just for that...
 // besides nobody else gonna develop this...
 // Anyway the tests are waste of time unless there are a ton of devs working on the same codebase.
