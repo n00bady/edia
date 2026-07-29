@@ -1,0 +1,29 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - unused        # finds unused funcs/vars
+    - deadcode      # finds unreachable code
+    - gosimple
+    - ineffassign
+    - errcheck
+    - gofmt         # enforces formatting rules (reports diffs)
+    - goimports
+    - revive
+  disable:
+    - maligned     # example: disable linters you don't want
+
+issues:
+  # optional: fail only on new issues in PRs
+  # exclude-use-default: false
+
+linters-settings:
+  gofmt:
+    simplify: true
+
+exclude:
+  - "generated|^vendor/"
+  - "someFileOrPatternToIgnore"
