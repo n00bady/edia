@@ -46,45 +46,9 @@ func ParseFloatToXDecimals(n string, d int) (float64, error) {
 	return rounded, nil
 }
 
-// Valid Coordinates
-func IsValidLatitude(f float64) (bool, error) {
-	if f > 90 || f < -90 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func IsValidLongitude(f float64) (bool, error) {
-	if f > 180 || f < -180 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-// Checks for negative nubmers
-func IsNegative(f float64) (bool, error) {
-	if f >= 0 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // Truncate a float32 to 2 decimals
 func TruncateFloatTo2Decimals(f float64) float64 {
 	return float64(int(f*100)) / 100
-}
-
-func Contains(sl []string, str string) bool {
-	for _, v := range sl {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }
 
 func openFile(e Entry, appState *AppState) error {

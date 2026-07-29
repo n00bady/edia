@@ -813,26 +813,6 @@ func getRenter(db *sql.DB, id uint) (RenterDetails, error) {
 	return r, err
 }
 
-// might not need this anymore...
-func resetAutoIncrement(db *sql.DB) error {
-	_, err := db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM entries) WHERE name = 'entries'")
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM coordinates) WHERE name = 'coordinates'")
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM personDetails) WHERE name = 'personDetails'")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func getYearRange(db *sql.DB) (oldestYear, newestYear int, err error) {
 	query := `
 		SELECT 
