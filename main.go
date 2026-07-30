@@ -24,6 +24,7 @@ func main() {
 	AppInst, err := InitApp()
 	if err != nil {
 		log.Printf("error initializing the App: %v", err)
+		os.Exit(1)
 	}
 	defer AppInst.db.Close()
 
