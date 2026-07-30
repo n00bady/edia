@@ -6,15 +6,13 @@ linters:
     - govet
     - staticcheck
     - unused        # finds unused funcs/vars
-    - deadcode      # finds unreachable code
     - gosimple
     - ineffassign
     - errcheck
     - gofmt         # enforces formatting rules (reports diffs)
     - goimports
     - revive
-  disable:
-    - maligned     # example: disable linters you don't want
+  disable: []
 
 issues:
   # optional: fail only on new issues in PRs

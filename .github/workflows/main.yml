@@ -17,13 +17,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21' # choose your minimum supported Go version
+          go-version: '1.24.1' # choose your minimum supported Go version
+
+      - name: Compute GOMODCACHE
+        run: echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV
 
       - name: Cache go build cache
         uses: actions/cache@v4
         continue-on-error: true
         with:
-          path: ~/.cache/go-build
+          path: |
+            ~/.cache/go-build
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-build-
@@ -32,7 +36,9 @@ jobs:
         uses: actions/cache@v4
         continue-on-error: true
         with:
-          path: ${{ env.GOMODCACHE }}
+          path: |
+            ${{ env.GOMODCACHE }}
+            ~/go/pkg/mod
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-mod-
@@ -82,8 +88,8 @@ jobs:
       - name: Install golangci-lint and run
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.59.0 # choose a recent stable version
-          args: run --timeout 5m
+          version: v2.12.2 # choose a recent stable version
+          args: run --timeout 5m --out-format colored-line-number
 
   test:
     name: Tests
@@ -96,6 +102,9 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
+
+      - name: Compute GOMODCACHE
+        run: echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV
 
       - name: Cache go build cache
         uses: actions/cache@v4
@@ -110,7 +119,9 @@ jobs:
         uses: actions/cache@v4
         continue-on-error: true
         with:
-          path: ${{ env.GOMODCACHE }}
+          path: |
+            ${{ env.GOMODCACHE }}
+            ~/go/pkg/mod
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-mod-
