@@ -88,7 +88,6 @@ jobs:
       - name: Install golangci-lint and run
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v2.12.2 # choose a recent stable version
           args: --timeout 5m 
 
   test:
