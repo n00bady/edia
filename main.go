@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -81,18 +82,25 @@ func InitApp() (*AppState, error) {
 	dataDir := myApp.Storage().RootURI().Path()
 	dbPath := filepath.Join(dataDir, "entries.db")
 	log.Printf("Database path: %s", dbPath)
+	var db *sql.DB
 
-	db, err := initDB(dbPath)
-	if err != nil {
-		log.Printf("Error initializing database: %v", err)
-		return nil, err
-	}
-	if db.Ping() == nil {
+	if _, err := os.Stat(dbPath); err == nil {
+		log.Println("DB file exist, no need to build it. ")
 		log.Printf("Opening existing database in: %s", dbPath)
 		db, err = sql.Open("sqlite3", dbPath)
 		if err != nil {
 			return nil, fmt.Errorf("error opening the database: %v", err)
 		}
+	} else if os.IsNotExist(err) {
+		log.Println("DB file doesn't exist.")
+		db, err = initDB(dbPath)
+		if err != nil {
+			log.Printf("Error initializing database: %v", err)
+			return nil, err
+		}
+	} else {
+		log.Println("Cannot find DB file or create DB: ", err)
+		return nil, err
 	}
 
 	year := strconv.FormatInt(int64(time.Now().Year()), 10)
