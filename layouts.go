@@ -609,14 +609,19 @@ func mainView(appState *AppState) (fyne.CanvasObject, error) {
 	// 	// appState.window.SetContent(container.NewStack(appState.bg, view))
 	// })
 
-	username := appState.user
-	userLabel := widget.NewLabel("This application is running for: " + username)
+	userLabel := widget.NewLabel("This application is running for: " + appState.user)
 	userLabel.TextStyle.Bold = true
 	userLabel.TextStyle.Italic = true
+	appState.userLabel = userLabel
+
+	// check if the username exist and if not ask for it
+	if appState.user == "" || appState.user == "Guest" {
+		askForName(appState)
+	}
 
 	customLayout := NewCenteredButtonsLayout(200, 60, 20)
 	content := container.New(customLayout, container.NewBorder(yearSelect, nil, nil, nil, nil), listViewButton, landLordButton, renterButton)
-	body := container.NewStack(appState.bg, appState.logo, container.NewBorder(nil, userLabel, nil, nil, content))
+	body := container.NewStack(appState.bg, appState.logo, container.NewBorder(nil, appState.userLabel, nil, nil, content))
 
 	return body, nil
 }

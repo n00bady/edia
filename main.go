@@ -106,10 +106,14 @@ func InitApp() (*AppState, error) {
 
 	year := strconv.FormatInt(int64(time.Now().Year()), 10)
 
-	// username
-	user := getOrAskForName(myApp, myWindow)
+	var user string
+	if saved := myApp.Preferences().String("user_display_name"); saved != "" {
+		user = saved
+	} else {
+		user = "Guest"
+	}
 
-	log.Printf("App initialized successfully!")
+	log.Println("App initialized successfully!")
 
 	return &AppState{
 		db:     db,

@@ -5,18 +5,20 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // It's easier that way
 type AppState struct {
-	db     *sql.DB
-	app    fyne.App
-	window fyne.Window
-	bg     fyne.CanvasObject
-	logo   fyne.CanvasObject
-	year   string
-	user   string
+	db        *sql.DB
+	app       fyne.App
+	window    fyne.Window
+	bg        fyne.CanvasObject
+	logo      fyne.CanvasObject
+	year      string
+	user      string
+	userLabel *widget.Label
 }
 
 // Main struct/table
