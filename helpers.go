@@ -160,7 +160,7 @@ func buildList(appState *AppState, data []any) *widget.List {
 			hbox := co.(*fyne.Container)
 			label, ok := hbox.Objects[0].(*widget.Label)
 			if !ok {
-				log.Println("CanvasObject is not *widget.Label! It's: %s\n)", fmt.Sprintf("%T", co))
+				log.Printf("CanvasObject is not *widget.Label! It's: %s\n)", fmt.Sprintf("%T", co))
 				return
 			}
 			button := hbox.Objects[2].(*widget.Button)

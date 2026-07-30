@@ -153,14 +153,17 @@ func TestGetOrCreateOwner_NewOwner(t *testing.T) {
 	defer db.Close()
 
 	owner := OwnerDetails{
-		FirstName:   "Jane",
-		LastName:    "Smith",
-		FathersName: "Jack",
-		AFM:         987654321,
-		ADT:         "AB123456",
-		ATA:         111,
-		E9:          []byte{1, 2, 3},
-		Notes:       "New owner",
+		FirstName:      "Jane",
+		LastName:       "Smith",
+		FathersName:    "Jack",
+		AFM:            987654321,
+		ADT:            "AB123456",
+		E9:             []byte{1, 2, 3},
+		HomeAddress:    "192th Street",
+		PhoneNumber:    "+903920028912",
+		Email:          "JaneS@egemail.com",
+		AccountantInfo: "myaccountant@accountants.gr",
+		Notes:          "There are notes here",
 	}
 
 	// Expect SELECT to return no rows
@@ -169,8 +172,8 @@ func TestGetOrCreateOwner_NewOwner(t *testing.T) {
 		WillReturnError(sql.ErrNoRows)
 
 	// Expect INSERT and return new ID = 15
-	mock.ExpectExec(`INSERT INTO ownerDetails \(firstName, lastName, fathersName, afm, adt, ata, e9, notes\) VALUES \(\?, \?, \?, \?, \?, \?, \?, \?\)`).
-		WithArgs("Jane", "Smith", "Jack", 987654321, "AB123456", 111, []byte{1, 2, 3}, "New owner").
+	mock.ExpectExec(`INSERT INTO ownerDetails \(firstName, lastName, fathersName, afm, adt, e9, homeAddress, phoneNumber, email, acountantInfo, notes\) VALUES \(\?, \?, \?, \?, \?, \?, \?, \?, \?, \?, \?\)`).
+		WithArgs("Jane", "Smith", "Jack", 987654321, "AB123456", []byte{1, 2, 3}, "192th Street", "+903920028912", "JaneS@egemail.com", "myaccountant@accountants.gr", "There are notes here").
 		WillReturnResult(sqlmock.NewResult(15, 1))
 
 	tx, _ := db.Begin()

@@ -860,7 +860,7 @@ func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
 
 	rows, err := db.Query(query, year, year)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get entries of the year %d: %v", year, err)
+		return nil, fmt.Errorf("cannot get entries of the year %s: %v", year, err)
 	}
 	defer rows.Close()
 
