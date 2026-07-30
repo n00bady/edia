@@ -255,7 +255,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			entriesMap["Μίσθωμα"],
 		}
 
-		// Unfocuses to prevent tapping every single entry field when draging
+		// Unfocuses to prevent tapping every single entry field when dragging
 		// body.OnScrolled = func(p fyne.Position) {
 		// 	appState.window.Canvas().Unfocus()
 		// }
@@ -295,7 +295,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			endDateInput,
 		)
 
-		// Putting both left and right containters on a grid
+		// Putting both left and right containers on a grid
 		content := container.NewGridWithColumns(2, left_container, right_container)
 		buttons := container.NewGridWithColumns(2, backButton, saveBtn)
 
@@ -884,7 +884,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 	return body, nil
 }
 
-// if and when the xwidget.NumericalEntry works this will actually be usefull
+// if and when the xwidget.NumericalEntry works this will actually be useful
 func focusChain(inputs []fyne.CanvasObject, appState *AppState, scrollContainer *fyne.Container) {
 	lastInput := inputs[len(inputs)-1]
 	for i, input := range inputs {
@@ -1200,7 +1200,7 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 				if err != nil {
 					dialog.ShowError(err, appState.window)
 				}
-				dialog.ShowInformation("Deleted", fmt.Sprintf("Deteled entry %d!", entry.ID), appState.window)
+				dialog.ShowInformation("Deleted", fmt.Sprintf("Deleted entry %d!", entry.ID), appState.window)
 				if err != nil {
 					dialog.ShowError(err, appState.window)
 				}
@@ -1869,7 +1869,7 @@ func editRenter(appState *AppState, id uint) error {
 
 	d := dialog.NewCustomConfirm("Enter Renter Details", "Save", "Cancel", scrolledForm, func(ok bool) {
 		if ok {
-			log.Println("Saving Owner named: ", firstName.Text+" "+lastName.Text)
+			log.Println("Saving Renter named: ", firstName.Text+" "+lastName.Text)
 			if firstName.Text == "" || lastName.Text == "" {
 				dialog.ShowError(fmt.Errorf("you need to add at least a first and last name"), appState.window)
 			}
@@ -1895,9 +1895,9 @@ func editRenter(appState *AppState, id uint) error {
 				dialog.ShowInformation("Error", "Cannot update renterDetails.", appState.window)
 				return
 			}
-			log.Println("Updated owner successfully!")
+			log.Println("Updated renter successfully!")
 
-			// TODO: Shitty way to do it, need to refactor the lists
+			// TODO: Poor approach, maybe in need of refactoring the lists ?
 			rv, _ := rentersView(appState)
 			appState.window.SetContent(container.NewStack(appState.bg, rv))
 		} else {
@@ -2031,7 +2031,7 @@ func editOwner(appState *AppState, id uint) error {
 			}
 			log.Println("Updated owner successfully!")
 
-			// TODO: Shitty way to do it, need to refactor the lists
+			// TODO: Poor approach, maybe in need of refactoring the lists ?
 			rv, _ := ownersView(appState)
 			appState.window.SetContent(container.NewStack(appState.bg, rv))
 		} else {

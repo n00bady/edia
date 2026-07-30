@@ -46,7 +46,7 @@ func checkEndDateNotification(appState *AppState) {
 				Title:   "End dates approaching!",
 				Content: content,
 			})
-			log.Println("Notification for end dates send!")
+			log.Println("Notification for end dates sent!")
 		}
 	}
 }

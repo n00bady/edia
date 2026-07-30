@@ -19,16 +19,16 @@ import (
 
 func main() {
 	// App initialization
-	log.Printf("Sarting the AgriCoMan App!")
+	log.Printf("Starting the AgriCoMan App!")
 	AppInst, err := InitApp()
 	if err != nil {
 		log.Printf("error initializing the App: %v", err)
 	}
 	defer AppInst.db.Close()
 
-	log.Printf("Constructing the intial view...")
+	log.Printf("Constructing the initial view...")
 
-	// Check if it runs on mobile or desktop and construct the apropriate layout
+	// Check if it runs on mobile or desktop and construct the appropriate layout
 	var body fyne.CanvasObject
 
 	body, err = mainView(AppInst)
@@ -48,7 +48,7 @@ func main() {
 	go notify(AppInst)
 
 	log.Printf("Running...")
-	// Runing the app
+	// Running the app
 	AppInst.window.ShowAndRun()
 }
 

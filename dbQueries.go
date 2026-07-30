@@ -11,7 +11,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Initialize the DB if it doesn't exists
+// Initialize the DB if it doesn't exist
 func initDB(dbPath string) (*sql.DB, error) {
 	// Make sure that the directory exists (old android version needs this)
 	log.Printf("Initializing database...")
@@ -29,7 +29,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NUll,
+			name TEXT NOT NULL,
 			timestamp DATETIME NOT NULL,
 			atak INTEGER NOT NULL,
 			kaek TEXT NOT NULL,
@@ -42,7 +42,7 @@ func initDB(dbPath string) (*sql.DB, error) {
         );
 	`
 
-	log.Printf("Creating table entries if it doesn't exists...")
+	log.Printf("Creating table entries if it doesn't exist...")
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
 		return nil, fmt.Errorf("error creating table: %v", err)
@@ -114,7 +114,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 	log.Println("Creating junction table entries_owner...")
 	_, err = db.Exec(createJunctionEntriesOnwer)
 	if err != nil {
-		return nil, fmt.Errorf("error creating juction table entries_owner: %v", err)
+		return nil, fmt.Errorf("error creating junction table entries_owner: %v", err)
 	}
 
 	createJunctionEntriesRenter := `
@@ -126,7 +126,7 @@ func initDB(dbPath string) (*sql.DB, error) {
 	log.Println("Creating junction table entries_renter...")
 	_, err = db.Exec(createJunctionEntriesRenter)
 	if err != nil {
-		return nil, fmt.Errorf("error creating juction table entries_renter: %v", err)
+		return nil, fmt.Errorf("error creating junction table entries_renter: %v", err)
 	}
 
 	log.Printf("Tables created successfully!")
@@ -153,14 +153,14 @@ func saveEntry(db *sql.DB, entry Entry) error {
 		return err
 	}
 
-	// get or create onwer(s)
+	// get or create owner(s)
 	for _, o := range entry.Owners {
 		ownerID, err := getOrCreateOwner(tx, o)
 		if err != nil {
 			return err
 		}
 
-		// link owner to entry on the junction tablle
+		// link owner to entry on the junction table
 		_, err = tx.Exec(`
 		INSERT OR IGNORE INTO entries_owner (entry_id, owner_id)
 		VALUES (?, ?)`,
@@ -170,7 +170,7 @@ func saveEntry(db *sql.DB, entry Entry) error {
 		}
 	}
 
-	// ger or create renter(s)
+	// get or create renter(s)
 	for _, r := range entry.Renters {
 		renterID, err := getOrCreateRenters(tx, r)
 		if err != nil {
