@@ -14,7 +14,11 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	cols := []string{"id", "firstName", "lastName", "fathersName", "afm", "adt", "e9", "homeAddress", "phoneNumber", "email", "accountantInfo", "notes"}
 	mockRows := sqlmock.NewRows(cols).AddRow(1, "John", "Doe", "Jr", 12345, "ADT", []byte("e9"), "Home", "555", "john@doe", "acc", "notes")
@@ -50,7 +54,11 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	cols := []string{"id", "entry_id", "latitude", "longitude"}
 	mockRows := sqlmock.NewRows(cols).AddRow(10, 1, 37.1234, 23.4567)
@@ -85,7 +93,11 @@ func TestGetYearRange_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	// sqlmock expects a regex, escape the query
 	rows := sqlmock.NewRows([]string{"oldest", "newest"}).AddRow(int64(1990), int64(2026))
@@ -111,7 +123,11 @@ func TestDelEntry_InvalidIDReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	if err := delEntry(db, 0); err == nil {
 		t.Fatalf("expected error for invalid id, got nil")
@@ -125,7 +141,11 @@ func TestDelEntry_DeleteFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	mock.ExpectBegin()
 	// SELECT EXISTS(...) -> return true
@@ -151,7 +171,11 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
 
 	ownerCols := []string{"id", "firstName", "lastName", "fathersName", "afm", "adt", "e9", "homeAddress", "phoneNumber", "email", "accountantInfo", "notes"}
 	mockOwners := sqlmock.NewRows(ownerCols).AddRow(2, "Alice", "Smith", "", 0, "", []byte{}, "", "", "alice@example.com", "", "")
