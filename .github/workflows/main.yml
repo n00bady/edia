@@ -40,9 +40,7 @@ jobs:
         uses: actions/cache@v4
         continue-on-error: true
         with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ~/go/pkg/mod
+          path: ${{ env.GOMODCACHE }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-mod-
@@ -134,12 +132,19 @@ jobs:
         uses: actions/cache@v4
         continue-on-error: true
         with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ~/go/pkg/mod
+          path: ${{ env.GOMODCACHE }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-mod-
+
+      - name: Setup locale
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y locales
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale LANG=en_US.UTF-8 
+          echo "LANG=en_US.UTF-8" >> $GITHUB_ENV
+          echo "LC=en_US.UTF-8" >> $GITHUB_ENV
 
       - name: Install native deps (X11 + GL)
         run: |
