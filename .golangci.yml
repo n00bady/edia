@@ -1,26 +1,22 @@
-version: "2"
+run:
+  timeout: 5m
+  skip-dirs:
+    - third_party
+    - builtin
+    - examples
+
 linters:
-  settings:
-    staticcheck:
-      checks:
-        - all
-        - -SA1019
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    rules:
-      - path: (.+)\.go$
-        text: generated|^vendor/
-      - path: (.+)\.go$
-        text: someFileOrPatternToIgnore
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+  enable:
+    - staticcheck
+    - gofmt
+    - goimports
+
+linters-settings:
+  staticcheck:
+    checks:
+      - all
+      - -SA1019
+
 formatters:
   enable:
     - gofmt
@@ -28,9 +24,11 @@ formatters:
   settings:
     gofmt:
       simplify: true
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: '(.+)\.go$'
+      text: 'generated|^vendor/'
+    - path: '(.+)\.go$'
+      text: 'someFileOrPatternToIgnore'

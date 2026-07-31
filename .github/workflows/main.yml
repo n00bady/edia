@@ -51,14 +51,14 @@ jobs:
         run: |
           sudo apt-get update 
           sudo apt-get install -y \
-          libx11-dev \
-          libgl1-mesa-dev \
-          libxrandr-dev \
-          libxi-dev \
-          libxcursor-dev \
-          libxinerama-dev \
-          libxss-dev \
-          xvfb
+            libx11-dev \
+            libgl1-mesa-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libxss-dev \
+            xvfb
 
       - name: Ensure modules download
         run: go mod download
@@ -89,11 +89,18 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4 
-        with:
-          version: latest
-          args: --out-format=colored-line-number --timeout=5m
+      - name: Install golangci-lint from source and run
+        run: |
+          set -e
+          # Build golangci-lint with the Go version set by actions/setup-go, so it matches go.mod
+          # Use @master for latest HEAD (includes v2 config support).
+          # For stability, replace '@master' with a specific tag/commit that you have verified supports v2.
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          # Ensure the binary is found (GOBIN or GOPATH/bin)
+          export GOBIN=$(go env GOPATH)/bin
+          export PATH=$GOBIN:$PATH
+          # Run the linter
+          golangci-lint run --out-format=colored-line-number --timeout=5m
 
   test:
     name: Tests
