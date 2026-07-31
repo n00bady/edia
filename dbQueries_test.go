@@ -14,9 +14,14 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	// Expect the DB to be closed and verify expectations after closing.
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -24,10 +29,10 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 	mockRows := sqlmock.NewRows(cols).AddRow(1, "John", "Doe", "Jr", 12345, "ADT", []byte("e9"), "Home", "555", "john@doe", "acc", "notes")
 
 	query := `
-		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes
-		FROM ownerDetails o
-		JOIN entries_owner eo ON o.id = eo.owner_id
-		WHERE eo.entry_id = ?`
+			SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes
+			FROM ownerDetails o
+			JOIN entries_owner eo ON o.id = eo.owner_id
+			WHERE eo.entry_id = ?`
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(1).WillReturnRows(mockRows)
 
@@ -41,10 +46,6 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 	if got[0].FirstName != "John" || got[0].LastName != "Doe" {
 		t.Fatalf("unexpected owner returned: %+v", got[0])
 	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
 }
 
 func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
@@ -54,9 +55,13 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -64,9 +69,9 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 	mockRows := sqlmock.NewRows(cols).AddRow(10, 1, 37.1234, 23.4567)
 
 	query := `
-		SELECT id, entry_id, latitude, longitude
-		FROM coordinates
-		WHERE entry_id = ?`
+			SELECT id, entry_id, latitude, longitude
+			FROM coordinates
+			WHERE entry_id = ?`
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(1).WillReturnRows(mockRows)
 
@@ -80,10 +85,6 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 	if got[0].Latitude != 37.1234 || got[0].Longitude != 23.4567 {
 		t.Fatalf("unexpected coordinate returned: %+v", got[0])
 	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
 }
 
 func TestGetYearRange_Success(t *testing.T) {
@@ -93,9 +94,13 @@ func TestGetYearRange_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -110,22 +115,22 @@ func TestGetYearRange_Success(t *testing.T) {
 	if oldest != 1990 || newest != 2026 {
 		t.Fatalf("unexpected year range: %d-%d", oldest, newest)
 	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
 }
 
 func TestDelEntry_InvalidIDReturnsError(t *testing.T) {
 	t.Parallel()
 
-	db, _, err := sqlmock.New()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -141,9 +146,13 @@ func TestDelEntry_DeleteFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -159,9 +168,6 @@ func TestDelEntry_DeleteFlow(t *testing.T) {
 	if err := delEntry(db, 1); err != nil {
 		t.Fatalf("delEntry returned error: %v", err)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
 }
 
 func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
@@ -171,9 +177,13 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
+	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
 		}
 	}()
 
@@ -201,8 +211,3 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 	if len(renters) != 1 || renters[0].FirstName != "Bob" {
 		t.Fatalf("unexpected renters result: %+v", renters)
 	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
-}
