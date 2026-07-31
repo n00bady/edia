@@ -16,7 +16,7 @@ jobs:
 
       - name: Extract GO version from go.mod
         id: go-version
-        run: echo "versions=$(grep '^go' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
+        run: echo "version=$(grep '^go' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -89,10 +89,15 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - name: Install golangci-lint and run
-        uses: golangci/golangci-lint-action@v4
-        with:
-          args: --timeout 5m 
+      - name: Install golangci-lint (build with current Go)
+        run: |
+          # Build/install golangci-lint using the Go toolchain set by actions/setup-go
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run golangci-lint
+        run: |
+          # use a supported output format (github-actions is deprecated)
+          golangci-lint run --out-format=colored-line-number --timeout 5m
 
   test:
     name: Tests
@@ -103,7 +108,7 @@ jobs:
 
       - name: Extract GO version from go.mod
         id: go-version
-        run: echo "versions=$(grep '^go' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
+        run: echo "version=$(grep '^go' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Set up Go
         uses: actions/setup-go@v4

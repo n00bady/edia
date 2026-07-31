@@ -1,29 +1,36 @@
-run:
-  timeout: 5m
-
+version: "2"
 linters:
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -SA1019
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: (.+)\.go$
+        text: generated|^vendor/
+      - path: (.+)\.go$
+        text: someFileOrPatternToIgnore
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
   enable:
-    - govet
-    - staticcheck
-    - unused        # finds unused funcs/vars
-    - gosimple
-    - ineffassign
-    - errcheck
-    - gofmt         # enforces formatting rules (reports diffs)
+    - gofmt
     - goimports
-    # - revive
-  disable: []
-
-issues:
-  # optional: fail only on new issues in PRs
-  # exclude-use-default: false
-
-linters-settings:
-  gofmt:
-    simplify: true
-  staticcheck:
-    checks: ["all", "-SA1019"]
-
-exclude:
-  - "generated|^vendor/"
-  - "someFileOrPatternToIgnore"
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
