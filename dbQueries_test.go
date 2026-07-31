@@ -1,284 +1,208 @@
 package main
 
 import (
-	"database/sql"
-	"log"
+	"regexp"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-func TestSaveEntry(t *testing.T) {
+func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Test Fatal Error: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Println("db.Close() error: ", err)
+			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
 	}()
 
-	now := time.Now().Truncate(time.Second)
-	entry := Entry{
-		Name:      "Test",
-		Timestamp: now,
-		Size:      150.5,
-		Type:      "A",
-		Rent:      1200.0,
-		Start:     "2025-01-01",
-		End:       "2025-12-31",
-		Owners: []OwnerDetails{
-			{FirstName: "Ιωάννης", LastName: "Ελάφις", FathersName: "Τζιμακος", AFM: 123456789},
-			{FirstName: "Ιωάννα", LastName: "Σμιθιδη", FathersName: "Ιάκωβος", AFM: 987654321},
-		},
-		Renters: []RenterDetails{
-			{FirstName: "Αλική", LastName: "Ναυτικού", AFM: 111222333},
-		},
-		Coords: []Coordinates{
-			{Latitude: 37.9838, Longitude: 23.7275},
-			{Latitude: 37.9840, Longitude: 23.7280},
-		},
-	}
+	cols := []string{"id", "firstName", "lastName", "fathersName", "afm", "adt", "e9", "homeAddress", "phoneNumber", "email", "accountantInfo", "notes"}
+	mockRows := sqlmock.NewRows(cols).AddRow(1, "John", "Doe", "Jr", 12345, "ADT", []byte("e9"), "Home", "555", "john@doe", "acc", "notes")
 
-	// Begin transaction
-	mock.ExpectBegin()
+	query := `
+		SELECT o.id, o.firstName, o.lastName, o.fathersName, o.afm, o.adt, o.e9, o.homeAddress, o.phoneNumber, o.email, o.accountantInfo, o.notes
+		FROM ownerDetails o
+		JOIN entries_owner eo ON o.id = eo.owner_id
+		WHERE eo.entry_id = ?`
 
-	// Insert to entries
-	mock.ExpectExec(`INSERT INTO entries \(name, timestamp, size, type, rent, start, end\) VALUES \(\?, \?, \?, \?, \?, \?, \?\)`).
-		WithArgs("Test", now, 150.5, "A", 1200.0, "2025-01-01", "2025-12-31").
-		WillReturnResult(sqlmock.NewResult(1, 1)) // lastInsertId = 1, rowsAffected = 1
+	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(1).WillReturnRows(mockRows)
 
-	mock.ExpectQuery(`SELECT id FROM owners WHERE afm = \?`).
-		WithArgs(123456789).
-		WillReturnError(sql.ErrNoRows)
-
-	mock.ExpectExec(`INSERT INTO owners .*`).
-		WithArgs("Ιωάννης", "Ελάφις", "Τζιμακος", 123456789, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(10, 1))
-
-	// Link first owner
-	mock.ExpectExec(`INSERT OR IGNORE INTO entries_owner \(entry_id, owner_id\) VALUES \(\?, \?\)`).
-		WithArgs(1, 10).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	// Second owner - not found → insert → new ID=11
-	mock.ExpectQuery(`SELECT id FROM owners WHERE afm = \?`).
-		WithArgs(987654321).
-		WillReturnError(sql.ErrNoRows)
-
-	mock.ExpectExec(`INSERT INTO owners .*`).
-		WithArgs("Ιωάννα", "Σμιθιδη", "Ιάκωβος", 987654321, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(11, 1))
-
-	// Link second owner
-	mock.ExpectExec(`INSERT OR IGNORE INTO entries_owner \(entry_id, owner_id\) VALUES \(\?, \?\)`).
-		WithArgs(1, 11).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	// Renters: getOrCreateRenter
-	// Renter - not found → insert → new ID=20
-	mock.ExpectQuery(`SELECT id FROM renters WHERE afm = \?`).
-		WithArgs(111222333).
-		WillReturnError(sql.ErrNoRows)
-
-	mock.ExpectExec(`INSERT INTO renters .*`).
-		WithArgs("Αλική", "Ναυτικού", sqlmock.AnyArg(), 111222333, sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(20, 1))
-
-	// Link renter
-	mock.ExpectExec(`INSERT OR IGNORE INTO entries_renter \(entry_id, renter_id\) VALUES \(\?, \?\)`).
-		WithArgs(1, 20).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	// Coordinates - two inserts
-	mock.ExpectExec(`INSERT INTO coordinates \(entry_id, latitude, longitude\) VALUES \(\?, \?, \?\)`).
-		WithArgs(1, 37.9838, 23.7275).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	mock.ExpectExec(`INSERT INTO coordinates \(entry_id, latitude, longitude\) VALUES \(\?, \?, \?\)`).
-		WithArgs(1, 37.9840, 23.7280).
-		WillReturnResult(sqlmock.NewResult(2, 1))
-
-	// Commit
-	mock.ExpectCommit()
-
-	// Call the function under test
-	err = saveEntry(db, entry)
+	got, err := getOwners(db, Entry{ID: 1})
 	if err != nil {
-		t.Fatalf("saveEntry returned unexpected error: %v", err)
+		t.Fatalf("getOwners returned error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 owner, got %d", len(got))
+	}
+	if got[0].FirstName != "John" || got[0].LastName != "Doe" {
+		t.Fatalf("unexpected owner returned: %+v", got[0])
 	}
 
-	// Ensure all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)
 	}
 }
 
-func TestGetOrCreateOwner_ExistingOwner(t *testing.T) {
+func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("failed to create sqlmock: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Println("db.Close error: ", err)
+			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
 	}()
 
-	owner := OwnerDetails{
-		FirstName:   "John",
-		LastName:    "Doe",
-		FathersName: "Jim",
-		AFM:         123456789,
-	}
+	cols := []string{"id", "entry_id", "latitude", "longitude"}
+	mockRows := sqlmock.NewRows(cols).AddRow(10, 1, 37.1234, 23.4567)
 
-	// Expect SELECT to find existing owner
-	mock.ExpectQuery(`SELECT id FROM ownerDetails WHERE firstName = \? AND lastName = \?`).
-		WithArgs("John", "Doe").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(42))
+	query := `
+		SELECT id, entry_id, latitude, longitude
+		FROM coordinates
+		WHERE entry_id = ?`
 
-	tx, _ := db.Begin() // sqlmock handles tx automatically
+	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(1).WillReturnRows(mockRows)
 
-	ownerID, err := getOrCreateOwner(tx, owner)
+	got, err := getCoords(db, Entry{ID: 1})
 	if err != nil {
-		t.Fatalf("getOrCreateOwner returned unexpected error: %v", err)
+		t.Fatalf("getCoords returned error: %v", err)
 	}
-	if ownerID != 42 {
-		t.Fatalf("expected ownerID 42, got %d", ownerID)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 coordinate, got %d", len(got))
+	}
+	if got[0].Latitude != 37.1234 || got[0].Longitude != 23.4567 {
+		t.Fatalf("unexpected coordinate returned: %+v", got[0])
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+		t.Fatalf("unmet sqlmock expectations: %v", err)
 	}
 }
 
-func TestGetOrCreateOwner_NewOwner(t *testing.T) {
+func TestGetYearRange_Success(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("failed to create sqlmock: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Println("db.Close() error: ", err)
+			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
 	}()
 
-	owner := OwnerDetails{
-		FirstName:      "Jane",
-		LastName:       "Smith",
-		FathersName:    "Jack",
-		AFM:            987654321,
-		ADT:            "AB123456",
-		E9:             []byte{1, 2, 3},
-		HomeAddress:    "192th Street",
-		PhoneNumber:    "+903920028912",
-		Email:          "JaneS@egemail.com",
-		AccountantInfo: "myaccountant@accountants.gr",
-		Notes:          "There are notes here",
-	}
+	// sqlmock expects a regex, escape the query
+	rows := sqlmock.NewRows([]string{"oldest", "newest"}).AddRow(int64(1990), int64(2026))
+	mock.ExpectQuery(`MIN\(year\).*MAX\(year\)`).WillReturnRows(rows)
 
-	// Expect SELECT to return no rows
-	mock.ExpectQuery(`SELECT id FROM ownerDetails WHERE firstName = \? AND lastName = \?`).
-		WithArgs("Jane", "Smith").
-		WillReturnError(sql.ErrNoRows)
-
-	// Expect INSERT and return new ID = 15
-	mock.ExpectExec(`INSERT INTO ownerDetails \(firstName, lastName, fathersName, afm, adt, e9, homeAddress, phoneNumber, email, acountantInfo, notes\) VALUES \(\?, \?, \?, \?, \?, \?, \?, \?, \?, \?, \?\)`).
-		WithArgs("Jane", "Smith", "Jack", 987654321, "AB123456", []byte{1, 2, 3}, "192th Street", "+903920028912", "JaneS@egemail.com", "myaccountant@accountants.gr", "There are notes here").
-		WillReturnResult(sqlmock.NewResult(15, 1))
-
-	tx, _ := db.Begin()
-
-	ownerID, err := getOrCreateOwner(tx, owner)
+	oldest, newest, err := getYearRange(db)
 	if err != nil {
-		t.Fatalf("getOrCreateOwner returned unexpected error: %v", err)
+		t.Fatalf("getYearRange returned error: %v", err)
 	}
-	if ownerID != 15 {
-		t.Fatalf("expected ownerID 15, got %d", ownerID)
+	if oldest != 1990 || newest != 2026 {
+		t.Fatalf("unexpected year range: %d-%d", oldest, newest)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+		t.Fatalf("unmet sqlmock expectations: %v", err)
 	}
 }
 
-func TestGetOrCreateRenter_ExistingRenter(t *testing.T) {
-	db, mock, err := sqlmock.New()
+func TestDelEntry_InvalidIDReturnsError(t *testing.T) {
+	t.Parallel()
+
+	db, _, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("failed to create sqlmock: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Println("db.Close error: ", err)
+			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
 	}()
 
-	renter := RenterDetails{
-		FirstName: "Alice",
-		LastName:  "Brown",
-		AFM:       111222333,
-	}
-
-	mock.ExpectQuery(`SELECT id FROM renterDetails WHERE firstName = \? AND lastName = \?`).
-		WithArgs("Alice", "Brown").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
-
-	tx, _ := db.Begin()
-
-	renterID, err := getOrCreateRenters(tx, renter)
-	if err != nil {
-		t.Fatalf("getOrCreateRenter returned unexpected error: %v", err)
-	}
-	if renterID != 7 {
-		t.Fatalf("expected renterID 7, got %d", renterID)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+	if err := delEntry(db, 0); err == nil {
+		t.Fatalf("expected error for invalid id, got nil")
 	}
 }
 
-func TestGetOrCreateRenter_NewRenter(t *testing.T) {
+func TestDelEntry_DeleteFlow(t *testing.T) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("failed to create sqlmock: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Println("db.Close() error: ", err)
+			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
 	}()
 
-	renter := RenterDetails{
-		FirstName:   "Bob",
-		LastName:    "Wilson",
-		FathersName: "Bill",
-		AFM:         555666777,
-		ADT:         "XY987654",
-		Notes:       "First time renter",
+	mock.ExpectBegin()
+	// SELECT EXISTS(...) -> return true
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT EXISTS(SELECT 1 FROM entries WHERE id = ?)")).WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+	// DELETE FROM entries WHERE id = ?
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM entries WHERE id = ?")).WithArgs(1).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	if err := delEntry(db, 1); err != nil {
+		t.Fatalf("delEntry returned error: %v", err)
 	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
 
-	mock.ExpectQuery(`SELECT id FROM renterDetails WHERE firstName = \? AND lastName = \?`).
-		WithArgs("Bob", "Wilson").
-		WillReturnError(sql.ErrNoRows)
+func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
+	t.Parallel()
 
-	mock.ExpectExec(`INSERT INTO renterDetails \(firstName, lastName, fathersName, afm, adt, notes\) VALUES \(\?, \?, \?, \?, \?, \?\)`).
-		WithArgs("Bob", "Wilson", "Bill", 555666777, "XY987654", "First time renter").
-		WillReturnResult(sqlmock.NewResult(23, 1))
-
-	tx, _ := db.Begin()
-
-	renterID, err := getOrCreateRenters(tx, renter)
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("getOrCreateRenter returned unexpected error: %v", err)
+		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	if renterID != 23 {
-		t.Fatalf("expected renterID 23, got %d", renterID)
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("unexpected error closing the DB: %v", err)
+		}
+	}()
+
+	ownerCols := []string{"id", "firstName", "lastName", "fathersName", "afm", "adt", "e9", "homeAddress", "phoneNumber", "email", "accountantInfo", "notes"}
+	mockOwners := sqlmock.NewRows(ownerCols).AddRow(2, "Alice", "Smith", "", 0, "", []byte{}, "", "", "alice@example.com", "", "")
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ownerDetails")).WillReturnRows(mockOwners)
+
+	owners, err := getAllOwners(db)
+	if err != nil {
+		t.Fatalf("getAllOwners returned error: %v", err)
+	}
+	if len(owners) != 1 || owners[0].FirstName != "Alice" {
+		t.Fatalf("unexpected owners result: %+v", owners)
+	}
+
+	renterCols := []string{"id", "firstName", "lastName", "fathersName", "afm", "adt", "e9", "notes"}
+	mockRenters := sqlmock.NewRows(renterCols).AddRow(3, "Bob", "Jones", "", 0, "", []byte{}, "")
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM renterDetails")).WillReturnRows(mockRenters)
+
+	renters, err := getAllRenters(db)
+	if err != nil {
+		t.Fatalf("getAllRenters returned error: %v", err)
+	}
+	if len(renters) != 1 || renters[0].FirstName != "Bob" {
+		t.Fatalf("unexpected renters result: %+v", renters)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+		t.Fatalf("unmet sqlmock expectations: %v", err)
 	}
 }
