@@ -253,7 +253,11 @@ func updateEntry(db *sql.DB, entry Entry) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
 
 	_, err = tx.Exec(`
 		UPDATE entries
@@ -543,7 +547,11 @@ func delEntry(db *sql.DB, id uint) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
 
 	var exists bool
 	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM entries WHERE id = ?)", id).Scan(&exists)
@@ -617,7 +625,7 @@ func getAllRenters(db *sql.DB) ([]RenterDetails, error) {
 	return renters, nil
 }
 
-func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
+func GetOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
@@ -643,7 +651,7 @@ func getOwnerEntries(db *sql.DB, o OwnerDetails) ([]Entry, error) {
 	return entries, nil
 }
 
-func getRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
+func GetRenterEntries(db *sql.DB, r RenterDetails) ([]Entry, error) {
 	var entries []Entry
 
 	rows, err := db.Query(`
@@ -674,7 +682,11 @@ func updateOwner(db *sql.DB, o OwnerDetails) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
 
 	res, err := tx.Exec(`
 		UPDATE ownerDetails
@@ -702,7 +714,11 @@ func updateRenter(db *sql.DB, r RenterDetails) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
 
 	res, err := tx.Exec(`
 		UPDATE renterDetails
@@ -727,29 +743,39 @@ func updateRenter(db *sql.DB, r RenterDetails) error {
 func deleteOwner(db *sql.DB, id int64) error {
 	tx, err := db.Begin()
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error starting transaction: %v", err)
 	}
 
 	_, err = tx.Exec(`DELETE FROM entries_owner WHERE owner_id = ?`, id)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error deleting from entries_owner: %v", err)
 	}
 
 	res, err := tx.Exec(`DELETE FROM ownerDetails WHERE id = ?`, id)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error deleting owner: %v", err)
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error checking rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("owner with id %d not found", id)
 	}
 
@@ -759,29 +785,39 @@ func deleteOwner(db *sql.DB, id int64) error {
 func deleteRenter(db *sql.DB, id int64) error {
 	tx, err := db.Begin()
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error starting transaction: %v", err)
 	}
 
 	_, err = tx.Exec(`DELETE FROM entries_renter WHERE renter_id = ?`, id)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error deleting from entries_renter: %v", err)
 	}
 
 	res, err := tx.Exec(`DELETE FROM renterDetails WHERE id = ?`, id)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error deleting renter: %v", err)
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("error checking rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
 		return fmt.Errorf("renter with id %d not found", id)
 	}
 

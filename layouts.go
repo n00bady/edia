@@ -60,22 +60,22 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 	}
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
-	start_input := widget.NewEntry()
-	start_input.SetPlaceHolder("ΑΠΟ")
-	start_input.Disable()
+	startInput := widget.NewEntry()
+	startInput.SetPlaceHolder("ΑΠΟ")
+	startInput.Disable()
 	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(start_input, appState.window)
+		showCalendar(startInput, appState.window)
 	})
-	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
+	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, startInput)
 
 	// Same as starting date but for the ending date
-	end_input := widget.NewEntry()
-	end_input.SetPlaceHolder("ΕΩΣ")
-	end_input.Disable()
+	endInput := widget.NewEntry()
+	endInput.SetPlaceHolder("ΕΩΣ")
+	endInput.Disable()
 	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(end_input, appState.window)
+		showCalendar(endInput, appState.window)
 	})
-	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
+	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, endInput)
 
 	// Button to add multiple landlords
 	landLordsLabelsContainer := container.NewVBox()
@@ -175,8 +175,8 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,
-			Start:     start_input.Text,
-			End:       end_input.Text,
+			Start:     startInput.Text,
+			End:       endInput.Text,
 			Rent:      money,
 			emisth:    selectedFileBytes,
 		}
@@ -268,48 +268,48 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 
 		return body, nil
 
-	} else {
-		// --Desktop layout--
-		landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
-		rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
-
-		// LEFT
-		left_container := container.NewVBox(
-			entriesMap["Όνομα Εγγραφής"],
-			landlordsContainer,
-			rentersContainer,
-			layout.NewSpacer(),
-			addGeoLocButton,
-		)
-
-		// RIGHT
-		right_container := container.NewVBox(
-			entriesMap["ATAK"],
-			entriesMap["KAEK"],
-			entriesMap["Στρέμματα"],
-			entriesMap["Είδος Καλ/γειας"],
-			container.NewGridWithColumns(2, entriesMap["Μίσθωμα"], buttonEmisth),
-			layout.NewSpacer(),
-			durationLabel,
-			startDateInput,
-			endDateInput,
-		)
-
-		// Putting both left and right containers on a grid
-		content := container.NewGridWithColumns(2, left_container, right_container)
-		buttons := container.NewGridWithColumns(2, backButton, saveBtn)
-
-		// Finally add everything into a VBox and call it a day
-		body := container.NewVBox(
-			content,
-			layout.NewSpacer(),
-			buttons,
-		)
-
-		log.Printf("desktopForm created successfully.")
-
-		return body, nil
 	}
+
+	// --Desktop layout--
+	landlordsContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Εκμισθωτές"), addLandLord), landLordsLabelsContainer)
+	rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenter), renterLabelsContainer)
+
+	// LEFT
+	leftContainer := container.NewVBox(
+		entriesMap["Όνομα Εγγραφής"],
+		landlordsContainer,
+		rentersContainer,
+		layout.NewSpacer(),
+		addGeoLocButton,
+	)
+
+	// RIGHT
+	rightContainer := container.NewVBox(
+		entriesMap["ATAK"],
+		entriesMap["KAEK"],
+		entriesMap["Στρέμματα"],
+		entriesMap["Είδος Καλ/γειας"],
+		container.NewGridWithColumns(2, entriesMap["Μίσθωμα"], buttonEmisth),
+		layout.NewSpacer(),
+		durationLabel,
+		startDateInput,
+		endDateInput,
+	)
+
+	// Putting both left and right containers on a grid
+	content := container.NewGridWithColumns(2, leftContainer, rightContainer)
+	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
+
+	// Finally add everything into a VBox and call it a day
+	body := container.NewVBox(
+		content,
+		layout.NewSpacer(),
+		buttons,
+	)
+
+	log.Printf("desktopForm created successfully.")
+
+	return body, nil
 }
 
 func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
@@ -369,24 +369,24 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	}
 
 	// Starting date input and it's button that opens a calendar for easier date choosing
-	start_input := widget.NewEntry()
-	start_input.SetPlaceHolder("ΑΠΟ")
-	start_input.Disable()
-	start_input.SetText(selectedEntry.Start)
+	startInput := widget.NewEntry()
+	startInput.SetPlaceHolder("ΑΠΟ")
+	startInput.Disable()
+	startInput.SetText(selectedEntry.Start)
 	startDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(start_input, appState.window)
+		showCalendar(startInput, appState.window)
 	})
-	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, start_input)
+	startDateInput := container.NewBorder(nil, nil, nil, startDateButton, startInput)
 
 	// Same as starting date but for the ending date
-	end_input := widget.NewEntry()
-	end_input.SetPlaceHolder("ΕΩΣ")
-	end_input.Disable()
-	end_input.SetText(selectedEntry.End)
+	endInput := widget.NewEntry()
+	endInput.SetPlaceHolder("ΕΩΣ")
+	endInput.Disable()
+	endInput.SetText(selectedEntry.End)
 	endDateButton := widget.NewButtonWithIcon("", theme.CalendarIcon(), func() {
-		showCalendar(end_input, appState.window)
+		showCalendar(endInput, appState.window)
 	})
-	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, end_input)
+	endDateInput := container.NewBorder(nil, nil, nil, endDateButton, endInput)
 
 	landLordsLabelsContainer := container.NewVBox()
 	for _, l := range landLords {
@@ -485,8 +485,8 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,
-			Start:     start_input.Text,
-			End:       end_input.Text,
+			Start:     startInput.Text,
+			End:       endInput.Text,
 			Rent:      money,
 			emisth:    selectedFileBytes,
 		}
@@ -518,7 +518,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	rentersContainer := container.NewVBox(container.NewBorder(nil, nil, widget.NewLabel("Μισθωτές"), addRenters), rentersLabelContainer)
 
 	// LEFT
-	left_container := container.NewVBox(
+	leftContainer := container.NewVBox(
 		entriesMap["Όνομα"],
 		landLordsContainer,
 		rentersContainer,
@@ -527,7 +527,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	)
 
 	// RIGHT
-	right_container := container.NewVBox(
+	rightContainer := container.NewVBox(
 		entriesMap["ATAK"],
 		entriesMap["KAEK"],
 		entriesMap["Στρέμματα"],
@@ -541,7 +541,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 	)
 
 	// Putting both left and right containters on a grid
-	content := container.NewGridWithColumns(2, left_container, right_container)
+	content := container.NewGridWithColumns(2, leftContainer, rightContainer)
 	buttons := container.NewGridWithColumns(2, backButton, saveBtn)
 
 	// Finally add everything into a VBox and call it a day
@@ -654,7 +654,10 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			addRenter(appState)
+			err := addRenter(appState)
+			if err != nil {
+				log.Println("addRenter error: ", err)
+			}
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -666,7 +669,10 @@ func rentersView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			addRenter(appState)
+			err := addRenter(appState)
+			if err != nil {
+				log.Println("addRenter error: ", err)
+			}
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -729,7 +735,10 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 
 	if fyne.CurrentDevice().IsMobile() {
 		addButton = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			addOwner(appState)
+			err := addOwner(appState)
+			if err != nil {
+				log.Println("addOwner error: ", err)
+			}
 		})
 
 		backButton = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
@@ -741,7 +750,10 @@ func ownersView(appState *AppState) (fyne.CanvasObject, error) {
 		})
 	} else {
 		addButton = widget.NewButtonWithIcon("Add New Entry", theme.ContentAddIcon(), func() {
-			addOwner(appState)
+			err := addOwner(appState)
+			if err != nil {
+				log.Println("addOwner error: ", err)
+			}
 		})
 
 		backButton = widget.NewButtonWithIcon("Back", theme.ContentUndoIcon(), func() {
@@ -857,7 +869,7 @@ func contractView(appState *AppState) (fyne.CanvasObject, error) {
 	addButton.Resize(fyne.NewSize(200, 200))
 	backButton.Resize(fyne.NewSize(200, 200))
 
-	emptyMsg := canvas.NewText("Add something to begin.", theme.ForegroundColor())
+	emptyMsg := canvas.NewText("Add something to begin.", theme.Color(theme.ColorNameForeground))
 	emptyMsg.TextSize = 18
 	emptyMsg.Alignment = fyne.TextAlignCenter
 	emptyMsg.TextStyle = fyne.TextStyle{Italic: true}
@@ -956,7 +968,10 @@ func showOwnerDetails(appState *AppState, owner *OwnerDetails) {
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
 
 	editBtn.OnTapped = func() {
-		editOwner(appState, owner.ID)
+		err := editOwner(appState, owner.ID)
+		if err != nil {
+			log.Println("editOwner error: ", err)
+		}
 	}
 	closeBtn.OnTapped = func() {
 		popup.Hide()
@@ -991,7 +1006,10 @@ func showRenterDetails(appState *AppState, renter *RenterDetails, list *widget.L
 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
 
 	editBtn.OnTapped = func() {
-		editRenter(appState, renter.ID)
+		err := editRenter(appState, renter.ID)
+		if err != nil {
+			log.Println("editRenter error: ", err)
+		}
 	}
 	closeBtn.OnTapped = func() {
 		popup.Hide()
@@ -1002,137 +1020,137 @@ func showRenterDetails(appState *AppState, renter *RenterDetails, list *widget.L
 	popup.Show()
 }
 
-func showDetailsRenterPopup(appState *AppState, renter *RenterDetails) {
-	log.Printf("Showing popup for: %v\n", renter.LastName)
+// func showDetailsRenterPopup(appState *AppState, renter *RenterDetails) {
+// 	log.Printf("Showing popup for: %v\n", renter.LastName)
+//
+// 	closeButton := widget.NewButton("Close", nil)
+//
+// 	buttonsContainer := container.NewVBox(
+// 		closeButton,
+// 	)
+//
+// 	entries, err := GetRenterEntries(appState.db, *renter)
+// 	if err != nil {
+// 		dialog.ShowError(err, appState.window)
+// 		return
+// 	}
+//
+// 	list := widget.NewList(
+// 		func() int {
+// 			return len(entries)
+// 		},
+// 		func() fyne.CanvasObject {
+// 			log.Printf("Creating list template...")
+// 			return widget.NewLabel("Template")
+// 		},
+// 		func(lii widget.ListItemID, co fyne.CanvasObject) {
+// 			log.Printf("Updating item with ID: %d", lii)
+// 			if lii < 0 || lii >= len(entries) {
+// 				log.Printf("Invalid item ID: %d", lii)
+// 				return
+// 			}
+// 			entry := entries[lii]
+// 			label, ok := co.(*widget.Label)
+// 			if !ok {
+// 				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
+// 				return
+// 			}
+// 			label.SetText(fmt.Sprintf("%d: %s", entry.ID, entry.Name))
+// 		},
+// 	)
+//
+// 	list.OnSelected = func(id widget.ListItemID) {
+// 		log.Printf("Selected item: %d\n", id)
+// 		if id >= 0 && id < len(entries) {
+// 			log.Printf("Showing popup for item: %d\n", entries[id].ID)
+// 			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
+// 			list.UnselectAll()
+// 		}
+// 	}
+//
+// 	scrollableList := container.NewVScroll(list)
+// 	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
+//
+// 	content := container.NewVBox(
+// 		scrollableList,
+// 		buttonsContainer,
+// 	)
+//
+// 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+//
+// 	closeButton.OnTapped = func() {
+// 		popup.Hide()
+// 	}
+//
+// 	popup.Show()
+// 	fmt.Printf("Popup displayed for: %v", renter.LastName)
+// }
 
-	closeButton := widget.NewButton("Close", nil)
-
-	buttonsContainer := container.NewVBox(
-		closeButton,
-	)
-
-	entries, err := getRenterEntries(appState.db, *renter)
-	if err != nil {
-		dialog.ShowError(err, appState.window)
-		return
-	}
-
-	list := widget.NewList(
-		func() int {
-			return len(entries)
-		},
-		func() fyne.CanvasObject {
-			log.Printf("Creating list template...")
-			return widget.NewLabel("Template")
-		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			log.Printf("Updating item with ID: %d", lii)
-			if lii < 0 || lii >= len(entries) {
-				log.Printf("Invalid item ID: %d", lii)
-				return
-			}
-			entry := entries[lii]
-			label, ok := co.(*widget.Label)
-			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
-				return
-			}
-			label.SetText(fmt.Sprintf("%d: %s", entry.ID, entry.Name))
-		},
-	)
-
-	list.OnSelected = func(id widget.ListItemID) {
-		log.Printf("Selected item: %d\n", id)
-		if id >= 0 && id < len(entries) {
-			log.Printf("Showing popup for item: %d\n", entries[id].ID)
-			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
-			list.UnselectAll()
-		}
-	}
-
-	scrollableList := container.NewVScroll(list)
-	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
-
-	content := container.NewVBox(
-		scrollableList,
-		buttonsContainer,
-	)
-
-	popup := widget.NewModalPopUp(content, appState.window.Canvas())
-
-	closeButton.OnTapped = func() {
-		popup.Hide()
-	}
-
-	popup.Show()
-	fmt.Printf("Popup displayed for: %v", renter.LastName)
-}
-
-func showDetailsOwnerPopup(appState *AppState, owner *OwnerDetails) {
-	log.Printf("Showing popup for: %v\n", owner.LastName)
-
-	closeButton := widget.NewButton("Close", nil)
-
-	buttonsContainer := container.NewVBox(
-		closeButton,
-	)
-
-	entries, err := getOwnerEntries(appState.db, *owner)
-	if err != nil {
-		dialog.ShowError(err, appState.window)
-		return
-	}
-
-	list := widget.NewList(
-		func() int {
-			return len(entries)
-		},
-		func() fyne.CanvasObject {
-			log.Printf("Creating list template...")
-			return widget.NewLabel("Template")
-		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			log.Printf("Updating item with ID: %d", lii)
-			if lii < 0 || lii >= len(entries) {
-				log.Printf("Invalid item ID: %d", lii)
-				return
-			}
-			entry := entries[lii]
-			label, ok := co.(*widget.Label)
-			if !ok {
-				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
-				return
-			}
-			label.SetText(fmt.Sprintf("%s", entry.Name))
-		},
-	)
-
-	list.OnSelected = func(id widget.ListItemID) {
-		log.Printf("Selected item: %d", id)
-		if id >= 0 && id < len(entries) {
-			log.Printf("Showing popup for item: %d", entries[id].ID)
-			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
-			list.UnselectAll()
-		}
-	}
-
-	scrollableList := container.NewVScroll(list)
-	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
-
-	content := container.NewVBox(
-		scrollableList,
-		buttonsContainer,
-	)
-
-	popup := widget.NewModalPopUp(content, appState.window.Canvas())
-
-	closeButton.OnTapped = func() {
-		popup.Hide()
-	}
-
-	popup.Show()
-	fmt.Printf("Popup displayed for: %v", owner.LastName)
-}
+// func showDetailsOwnerPopup(appState *AppState, owner *OwnerDetails) {
+// 	log.Printf("Showing popup for: %v\n", owner.LastName)
+//
+// 	closeButton := widget.NewButton("Close", nil)
+//
+// 	buttonsContainer := container.NewVBox(
+// 		closeButton,
+// 	)
+//
+// 	entries, err := GetOwnerEntries(appState.db, *owner)
+// 	if err != nil {
+// 		dialog.ShowError(err, appState.window)
+// 		return
+// 	}
+//
+// 	list := widget.NewList(
+// 		func() int {
+// 			return len(entries)
+// 		},
+// 		func() fyne.CanvasObject {
+// 			log.Printf("Creating list template...")
+// 			return widget.NewLabel("Template")
+// 		},
+// 		func(lii widget.ListItemID, co fyne.CanvasObject) {
+// 			log.Printf("Updating item with ID: %d", lii)
+// 			if lii < 0 || lii >= len(entries) {
+// 				log.Printf("Invalid item ID: %d", lii)
+// 				return
+// 			}
+// 			entry := entries[lii]
+// 			label, ok := co.(*widget.Label)
+// 			if !ok {
+// 				log.Printf("Canvas object is not *widget.Label, its: %s", fmt.Sprintf("%T", co))
+// 				return
+// 			}
+// 			label.SetText(fmt.Sprintf("%s", entry.Name))
+// 		},
+// 	)
+//
+// 	list.OnSelected = func(id widget.ListItemID) {
+// 		log.Printf("Selected item: %d", id)
+// 		if id >= 0 && id < len(entries) {
+// 			log.Printf("Showing popup for item: %d", entries[id].ID)
+// 			showDetailsPopup(entries[id], appState, list, &entries, &entries[id].Owners, &entries[id].Renters)
+// 			list.UnselectAll()
+// 		}
+// 	}
+//
+// 	scrollableList := container.NewVScroll(list)
+// 	scrollableList.SetMinSize(fyne.NewSize(appState.window.Canvas().Size().Width*0.7, appState.window.Canvas().Size().Height*0.7))
+//
+// 	content := container.NewVBox(
+// 		scrollableList,
+// 		buttonsContainer,
+// 	)
+//
+// 	popup := widget.NewModalPopUp(content, appState.window.Canvas())
+//
+// 	closeButton.OnTapped = func() {
+// 		popup.Hide()
+// 	}
+//
+// 	popup.Show()
+// 	fmt.Printf("Popup displayed for: %v", owner.LastName)
+// }
 
 // Details popup for the list
 func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entries *[]Entry, owners *[]OwnerDetails, renters *[]RenterDetails) {
@@ -1164,14 +1182,17 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 	}
 
 	misthButton := widget.NewButton("ΜΙΣΘΩΤΗΡΙΟ", func() {
-		openFile(entry, appState)
+		err := openFile(entry, appState)
+		if err != nil {
+			log.Println("openFile error: ", err)
+		}
 	})
 
 	// Add all the details!
 	scrollableContainer := container.NewVScroll(
 		container.NewVBox(
 			widget.NewLabel(fmt.Sprintf("ID: %d", entry.ID)),
-			widget.NewLabel(fmt.Sprintf("%s", entry.Name)),
+			widget.NewLabel(entry.Name),
 			ownersContainer,
 			rentersContainer,
 			widget.NewLabel(fmt.Sprintf("Μίσθωμα: %.2f€", entry.Rent)),
@@ -1199,7 +1220,7 @@ func showDetailsPopup(entry Entry, appState *AppState, list *widget.List, entrie
 		popup.Hide()
 	}
 	deleteButton.OnTapped = func() {
-		dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", fmt.Sprintf("Είσαι σίγουρος;"), func(b bool) {
+		dlg := dialog.NewConfirm("Επιβεβαίωση Διαγραφής", "Είσαι σίγουρος;", func(b bool) {
 			if b {
 				err := delEntry(appState.db, entry.ID)
 				if err != nil {
