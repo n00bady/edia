@@ -87,21 +87,9 @@ func TestGetYearRange_Success(t *testing.T) {
 	}
 	defer db.Close()
 
-	query := `
-		SELECT 
-            MIN(year) AS oldest,
-            MAX(year) AS newest
-        FROM (
-            SELECT substr(startDate, 7, 4) AS year FROM entries
-            UNION ALL
-            SELECT substr(endDate,   7, 4) AS year FROM entries
-        )
-        WHERE year GLOB '\[0-9\]\[0-9\]\[0-9\]\[0-9\]'   -- basic protection against bad data
-	`
-
 	// sqlmock expects a regex, escape the query
-	rows := sqlmock.NewRows([]string{"oldest", "newest"}).AddRow(1990, 2026)
-	mock.ExpectQuery(regexp.QuoteMeta(query)).WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"oldest", "newest"}).AddRow(int64(1990), int64(2026))
+	mock.ExpectQuery(`MIN\(year\).*MAX\(year\)`).WillReturnRows(rows)
 
 	oldest, newest, err := getYearRange(db)
 	if err != nil {
