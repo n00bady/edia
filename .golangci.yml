@@ -21,6 +21,8 @@ issues:
 linters-settings:
   gofmt:
     simplify: true
+  staticcheck:
+    checks: ["all", "-SA1019"]
 
 exclude:
   - "generated|^vendor/"
