@@ -125,6 +125,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-mod-
 
+      - name: Install native deps (X11 + GL)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxrandr-dev \
+            libxxf86vm-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libxinerama-dev \
+            libxss-dev \
+            pkg-config \
+            xvfb
+
       - name: Install dependencies & run tests
         run: |
           go mod download
