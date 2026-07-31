@@ -82,7 +82,11 @@ func openFile(e Entry, appState *AppState) error {
 		if err != nil {
 			return err
 		}
-		defer writerCloser.Close()
+		defer func() {
+			if err := writerCloser.Close(); err != nil {
+				log.Println("writerCloser.Close() error: ", err)
+			}
+		}()
 
 		_, err = writerCloser.Write(e.emisth)
 		if err != nil {
@@ -123,7 +127,9 @@ func openFile(e Entry, appState *AppState) error {
 	if err != nil {
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		log.Println("tmpFile.Close() error: ", err)
+	}
 
 	fileURI := fmt.Sprintf("file://%s", filepath.ToSlash(tmpFile.Name()))
 	u, err := url.Parse(fileURI)

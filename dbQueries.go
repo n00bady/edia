@@ -339,7 +339,11 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("rows.Close() error: ", err)
+		}
+	}()
 
 	for rows.Next() {
 		var e Entry
@@ -365,12 +369,16 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 
 			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
 			if err != nil {
-				ownerRows.Close()
+				if err := ownerRows.Close(); err != nil {
+					log.Println("ownerRows.Close() error: ", err)
+				}
 				return nil, err
 			}
 			e.Owners = append(e.Owners, o)
 		}
-		ownerRows.Close()
+		if err := ownerRows.Close(); err != nil {
+			log.Println("ownerRows.Close() error: ", err)
+		}
 
 		// get the renters for the entry
 		renterRows, err := db.Query(`
@@ -388,12 +396,16 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 
 			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
 			if err != nil {
-				renterRows.Close()
+				if err := renterRows.Close(); err != nil {
+					log.Println("renterRows.Close() error: ", err)
+				}
 				return nil, err
 			}
 			e.Renters = append(e.Renters, r)
 		}
-		renterRows.Close()
+		if err := renterRows.Close(); err != nil {
+			log.Println("renterRows.Close() error: ", err)
+		}
 
 		// get the coordinates for the entry
 		coordRows, err := db.Query(`
@@ -409,12 +421,17 @@ func getAllEntries(db *sql.DB) ([]Entry, error) {
 			var c Coordinates
 			err := coordRows.Scan(&c.ID, &c.EntryID, &c.Latitude, &c.Longitude)
 			if err != nil {
-				coordRows.Close()
+				if err := coordRows.Close(); err != nil {
+					log.Println("coordRows.Close() error: ", err)
+				}
+
 				return nil, err
 			}
 			e.Coords = append(e.Coords, c)
 		}
-		coordRows.Close()
+		if err := coordRows.Close(); err != nil {
+			log.Println("coordRows.Close() error: ", err)
+		}
 
 		entries = append(entries, e)
 	}
@@ -470,7 +487,11 @@ func getOwners(db *sql.DB, e Entry) ([]OwnerDetails, error) {
 	if err != nil {
 		return owners, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("rows.Close() error: ", err)
+		}
+	}()
 
 	for rows.Next() {
 		var o OwnerDetails
@@ -497,7 +518,11 @@ func getRenters(db *sql.DB, e Entry) ([]RenterDetails, error) {
 	if err != nil {
 		return renters, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("rows.Close() error: ", err)
+		}
+	}()
 
 	for rows.Next() {
 		var r RenterDetails
@@ -523,7 +548,11 @@ func getCoords(db *sql.DB, e Entry) ([]Coordinates, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("rows.Close() error: ", err)
+		}
+	}()
 
 	for rows.Next() {
 		var c Coordinates
@@ -898,7 +927,11 @@ func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get entries of the year %s: %v", year, err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("rows.Close() error: ", err)
+		}
+	}()
 
 	for rows.Next() {
 		var e Entry
@@ -924,12 +957,16 @@ func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
 
 			err := ownerRows.Scan(&o.ID, &o.FirstName, &o.LastName, &o.FathersName, &o.AFM, &o.ADT, &o.E9, &o.HomeAddress, &o.PhoneNumber, &o.Email, &o.AccountantInfo, &o.Notes)
 			if err != nil {
-				ownerRows.Close()
+				if err := ownerRows.Close(); err != nil {
+					log.Println("ownerRows.Close() error: ", err)
+				}
 				return nil, err
 			}
 			e.Owners = append(e.Owners, o)
 		}
-		ownerRows.Close()
+		if err := ownerRows.Close(); err != nil {
+			log.Println("ownerRows.Close() error: ", err)
+		}
 
 		// get the renters for the entry
 		renterRows, err := db.Query(`
@@ -947,12 +984,16 @@ func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
 
 			err := renterRows.Scan(&r.ID, &r.FirstName, &r.LastName, &r.FathersName, &r.AFM, &r.ADT, &r.E9, &r.Notes)
 			if err != nil {
-				renterRows.Close()
+				if err := renterRows.Close(); err != nil {
+					log.Println("renterRows.Close() error: ", err)
+				}
 				return nil, err
 			}
 			e.Renters = append(e.Renters, r)
 		}
-		renterRows.Close()
+		if err := renterRows.Close(); err != nil {
+			log.Println("renterRows.Close() error: ", err)
+		}
 
 		// get the coordinates for the entry
 		coordRows, err := db.Query(`
@@ -968,12 +1009,16 @@ func getAllEntriesByYear(db *sql.DB, year string) ([]Entry, error) {
 			var c Coordinates
 			err := coordRows.Scan(&c.ID, &c.EntryID, &c.Latitude, &c.Longitude)
 			if err != nil {
-				coordRows.Close()
+				if err := coordRows.Close(); err != nil {
+					log.Println("coordRows.Close() error: ", err)
+				}
 				return nil, err
 			}
 			e.Coords = append(e.Coords, c)
 		}
-		coordRows.Close()
+		if err := coordRows.Close(); err != nil {
+			log.Println("coordRows.Close() error: ", err)
+		}
 
 		entries = append(entries, e)
 	}

@@ -103,7 +103,11 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -419,7 +423,11 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1318,7 +1326,11 @@ func showOwnerEntriesPopup(appState *AppState, owners *[]OwnerDetails, labelCont
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1445,7 +1457,11 @@ func showRenterEntriesPopup(appState *AppState, renters *[]RenterDetails, labelC
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1565,7 +1581,11 @@ func addRenter(appState *AppState) error {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1710,7 +1730,11 @@ func addOwner(appState *AppState) error {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1856,7 +1880,11 @@ func editRenter(appState *AppState, id uint) error {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {
@@ -1972,7 +2000,11 @@ func editOwner(appState *AppState, id uint) error {
 			if err != nil || reader == nil {
 				return
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("reader.Close() error: ", err)
+				}
+			}()
 
 			selectedFileBytes, err = io.ReadAll(reader)
 			if err != nil {

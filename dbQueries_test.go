@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"log"
 	"testing"
 	"time"
 
@@ -13,7 +14,11 @@ func TestSaveEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Test Fatal Error: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("db.Close() error: ", err)
+		}
+	}()
 
 	now := time.Now().Truncate(time.Second)
 	entry := Entry{
@@ -116,7 +121,11 @@ func TestGetOrCreateOwner_ExistingOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("db.Close error: ", err)
+		}
+	}()
 
 	owner := OwnerDetails{
 		FirstName:   "John",
@@ -150,7 +159,11 @@ func TestGetOrCreateOwner_NewOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("db.Close() error: ", err)
+		}
+	}()
 
 	owner := OwnerDetails{
 		FirstName:      "Jane",
@@ -196,7 +209,11 @@ func TestGetOrCreateRenter_ExistingRenter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("db.Close error: ", err)
+		}
+	}()
 
 	renter := RenterDetails{
 		FirstName: "Alice",
@@ -228,7 +245,11 @@ func TestGetOrCreateRenter_NewRenter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("db.Close() error: ", err)
+		}
+	}()
 
 	renter := RenterDetails{
 		FirstName:   "Bob",

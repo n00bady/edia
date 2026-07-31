@@ -26,7 +26,12 @@ func main() {
 		log.Printf("error initializing the App: %v", err)
 		os.Exit(1)
 	}
-	defer AppInst.db.Close()
+	defer func() {
+		if err := AppInst.db.Close(); err != nil {
+			log.Println("AppInst.db.Close() error: ", err)
+			os.Exit(1)
+		}
+	}()
 
 	log.Printf("Constructing the initial view...")
 
