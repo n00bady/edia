@@ -89,15 +89,11 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - name: Install golangci-lint (build with current Go)
-        run: |
-          # Build/install golangci-lint using the Go toolchain set by actions/setup-go
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
       - name: Run golangci-lint
-        run: |
-          # use a supported output format (github-actions is deprecated)
-          golangci-lint run --out-format=colored-line-number --timeout 5m
+        uses: golangci/golangci-lint-action@v4 
+        with:
+          version: latest
+          args: --out-format=colored-line-number --timeout=5m
 
   test:
     name: Tests
