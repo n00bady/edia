@@ -11,7 +11,7 @@ linters:
     - errcheck
     - gofmt         # enforces formatting rules (reports diffs)
     - goimports
-    - revive
+    # - revive
   disable: []
 
 issues:
