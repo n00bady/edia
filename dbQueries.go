@@ -242,7 +242,7 @@ func getOrCreateRenters(tx *sql.Tx, r RenterDetails) (int64, error) {
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		r.FirstName, r.LastName, r.FathersName, r.AFM, r.ADT, r.E9, r.Notes)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	return res.LastInsertId()
