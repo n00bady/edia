@@ -15,6 +15,7 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
@@ -54,6 +55,7 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
@@ -92,6 +94,7 @@ func TestGetYearRange_Success(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
@@ -121,6 +124,7 @@ func TestDelEntry_InvalidIDReturnsError(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
@@ -142,6 +146,7 @@ func TestDelEntry_DeleteFlow(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
@@ -172,6 +177,7 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
 		}
