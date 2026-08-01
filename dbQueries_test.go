@@ -14,8 +14,6 @@ func TestGetOwners_ReturnsExpectedOwners(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	// Expect the DB to be closed and verify expectations after closing.
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -55,7 +53,6 @@ func TestGetCoords_ReturnsExpectedCoordinates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -94,7 +91,6 @@ func TestGetYearRange_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -104,9 +100,9 @@ func TestGetYearRange_Success(t *testing.T) {
 		}
 	}()
 
-	// sqlmock expects a regex, escape the query
+	// sqlmock expects a regex, use DOTALL mode so dot matches newlines
 	rows := sqlmock.NewRows([]string{"oldest", "newest"}).AddRow(int64(1990), int64(2026))
-	mock.ExpectQuery(`MIN\(year\).*MAX\(year\)`).WillReturnRows(rows)
+	mock.ExpectQuery("(?s)MIN\\(year\\).*MAX\\(year\\)").WillReturnRows(rows)
 
 	oldest, newest, err := getYearRange(db)
 	if err != nil {
@@ -124,7 +120,6 @@ func TestDelEntry_InvalidIDReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -146,7 +141,6 @@ func TestDelEntry_DeleteFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -177,7 +171,6 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error creating sqlmock: %v", err)
 	}
-	mock.ExpectClose()
 	defer func() {
 		if err := db.Close(); err != nil {
 			t.Fatalf("unexpected error closing the DB: %v", err)
@@ -211,3 +204,4 @@ func TestGetAllOwnersAndRenters_ScanMapping(t *testing.T) {
 	if len(renters) != 1 || renters[0].FirstName != "Bob" {
 		t.Fatalf("unexpected renters result: %+v", renters)
 	}
+}
