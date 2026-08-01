@@ -4,48 +4,67 @@ import (
 	"testing"
 )
 
-// NOTE:
-// Helper function tests use table-driven style and explicit subtests.
-// Keep lightweight unit tests fast and mark heavier ones to skip unless explicitly enabled.
-
-func TestFormatDate(t *testing.T) {
+func TestNewEntryWithLabel_ReturnsEntry(t *testing.T) {
 	t.Parallel()
 
-	type args struct {
-		input string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "empty input",
-			args: args{input: ""},
-			want: "",
-		},
-		{
-			name: "iso date",
-			args: args{input: "2026-07-31"},
-			want: "2026-07-31", // adjust expected outcome to the repository's helper behavior
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			// Replace the following skip with a call to the real helper when ready, e.g.:
-			// got := helpers.FormatDate(tt.args.input)
-			// if got != tt.want { t.Fatalf("FormatDate() = %q, want %q", got, tt.want) }
-			t.Skip("unit test scaffold: wire to actual helper function and enable")
-		})
+	e := newEntryWithLabel("placeholder")
+	if e == nil {
+		t.Fatalf("expected non-nil *widget.Entry, got nil")
 	}
 }
 
-func TestEnsurePathExists(t *testing.T) {
+func TestNewFilteredEntry_SetsOnChanged(t *testing.T) {
 	t.Parallel()
-	t.Run("creates and cleans up temporary dir", func(t *testing.T) {
-		t.Skip("filesystem helper test scaffold: implement with os.MkdirTemp and cleanup or use afero for in-memory FS")
-	})
+
+	e := NewFilteredEntry("[^0-9]", "digits only")
+	if e == nil {
+		t.Fatalf("expected non-nil *widget.Entry, got nil")
+	}
+	if e.OnChanged == nil {
+		t.Fatalf("expected OnChanged handler to be set on filtered entry")
+	}
+}
+
+func TestParseFloatToXDecimals_RoundsCorrectly(t *testing.T) {
+	t.Parallel()
+
+	got, err := ParseFloatToXDecimals("3.14159", 3)
+	if err != nil {
+		t.Fatalf("unexpected error parsing float: %v", err)
+	}
+	want := 3.142
+	if got != want {
+		t.Fatalf("ParseFloatToXDecimals() = %v, want %v", got, want)
+	}
+}
+
+func TestParseFloatToXDecimals_InvalidInputs(t *testing.T) {
+	t.Parallel()
+
+	// empty string should return an error
+	if _, err := ParseFloatToXDecimals("", 2); err == nil {
+		t.Fatalf("expected error for empty string, got nil")
+	}
+
+	// too many decimals (negative) should return an error
+	if _, err := ParseFloatToXDecimals("1.23", -1); err == nil {
+		t.Fatalf("expected error for negative decimals, got nil")
+	}
+}
+
+func TestTruncateFloatTo2Decimals_TruncatesDown(t *testing.T) {
+	t.Parallel()
+
+	got := TruncateFloatTo2Decimals(3.14159)
+	want := 3.14
+	if got != want {
+		t.Fatalf("TruncateFloatTo2Decimals() = %v, want %v", got, want)
+	}
+
+	// negative value
+	got = TruncateFloatTo2Decimals(-1.239)
+	want = -1.23 // int(-1.239*100) => int(-123.9) => -123 -> -1.23
+	if got != want {
+		t.Fatalf("TruncateFloatTo2Decimals() with negative = %v, want %v", got, want)
+	}
 }
