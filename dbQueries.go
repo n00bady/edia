@@ -25,6 +25,15 @@ func initDB(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening database: %v", err)
 	}
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("error pinging DB: %v", err)
+	}
+	if _, err := db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("error enabling foreign_keys pragma: %v ", err)
+	}
+	_, _ = db.Exec("PRAGMA busy_timeout = 5000;")
 
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS entries (

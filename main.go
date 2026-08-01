@@ -97,6 +97,19 @@ func InitApp() (*AppState, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error opening the database: %v", err)
 		}
+		if err := db.Ping(); err != nil {
+			if err := db.Close(); err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("error pinging DB: %v", err)
+		}
+		if _, err := db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+			if err := db.Close(); err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("error enabling foreign_keys pragma: %v", err)
+		}
+		_, _ = db.Exec("PRAGMA busy_timeout = 5000;")
 	} else if os.IsNotExist(err) {
 		log.Println("DB file doesn't exist.")
 		db, err = initDB(dbPath)
