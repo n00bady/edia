@@ -41,14 +41,17 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 
 	for i, l := range labelsEntries {
 		switch i {
-		case 1, 2:
+		case 1:
 			entriesMap[l] = NewFilteredEntry(`[^0-9]`, l)
+		case 2:
+			entriesMap[l] = NewFilteredEntry(`[^0-9/|EE|EK|ME|ΕΕ|ΕΚ|ΜΕ]`, l)
 		case 4:
 			entriesMap[l] = newEntryWithLabel(l)
 		case 3, 5:
 			entriesMap[l] = NewFilteredEntry(`[^0-9.]`, l)
 		default:
-			entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+			// entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+			entriesMap[l] = newEntryWithLabel(l)
 		}
 	}
 
@@ -137,7 +140,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			coords = append(coords, Coordinates{Latitude: latValue, Longitude: longValue})
 		}
 
-		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 32)
+		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 64)
 		if err != nil {
 			log.Printf("Error parsing ATAK")
 			dialog.ShowError(err, appState.window)
@@ -175,7 +178,7 @@ func addForm(appState *AppState) (fyne.CanvasObject, error) {
 			Renters:   renters,
 			Coords:    coords,
 			Timestamp: time.Now(),
-			ATAK:      uint(atak),
+			ATAK:      uint64(atak),
 			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,
@@ -343,14 +346,17 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 
 	for i, l := range labelsEntries {
 		switch i {
-		case 1, 2:
+		case 1:
 			entriesMap[l] = NewFilteredEntry(`[^0-9]`, l)
+		case 2:
+			entriesMap[l] = NewFilteredEntry(`[^0-9/|EE|EK|ME|ΕΕ|ΕΚ|ΜΕ]`, l)
 		case 4:
 			entriesMap[l] = newEntryWithLabel(l)
 		case 3, 5:
 			entriesMap[l] = NewFilteredEntry(`[^0-9.]`, l)
 		default:
-			entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+			// entriesMap[l] = NewFilteredEntry(`[^a-zA-Z]`, l)
+			entriesMap[l] = newEntryWithLabel(l)
 		}
 	}
 
@@ -461,7 +467,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			coords = append(coords, Coordinates{Latitude: latValue, Longitude: longValue})
 		}
 
-		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 32)
+		atak, err := strconv.ParseInt(entriesMap["ATAK"].Text, 10, 64)
 		if err != nil {
 			log.Printf("Error parsing ATAK")
 			dialog.ShowError(err, appState.window)
@@ -489,7 +495,7 @@ func editForm(appState *AppState, id uint) (fyne.CanvasObject, error) {
 			Renters:   renters,
 			Coords:    coords,
 			Timestamp: time.Now(),
-			ATAK:      uint(atak),
+			ATAK:      uint64(atak),
 			KAEK:      entriesMap["KAEK"].Text,
 			Size:      size,
 			Type:      entriesMap["Είδος Καλ/γειας"].Text,

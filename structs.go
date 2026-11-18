@@ -29,7 +29,7 @@ type Entry struct {
 	Renters   []RenterDetails
 	Owners    []OwnerDetails
 	Coords    []Coordinates
-	ATAK      uint
+	ATAK      uint64
 	KAEK      string
 	Size      float64
 	Type      string
